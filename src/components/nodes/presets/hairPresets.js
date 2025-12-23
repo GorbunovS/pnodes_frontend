@@ -1,0 +1,36 @@
+export const hairPresets = {
+  style: [
+    { id: "long_loose", label: "Длинные распущенные" },
+    { id: "bob_cut", label: "Каре / Боб" },
+    { id: "pixie_cut", label: "Пикси / Короткая стрижка" },
+    { id: "messy_bun", label: "Небрежный пучок" },
+    { id: "ponytail_high", label: "Высокий хвост" },
+    { id: "braided", label: "Косы / Плетение" },
+    { id: "buzz_cut", label: "Ёжик / Очень короткие" },
+    { id: "bangs_fringe", label: "С чёлкой" },
+  ],
+  texture: [
+    { id: "straight_silky", label: "Прямые и шелковистые" },
+    { id: "wavy_beach", label: "Волнистые (пляжная волна)" },
+    { id: "curly_defined", label: "Кудрявые (четкий завиток)" },
+    { id: "coily_afro", label: "Афро / Мелкий бес" },
+    { id: "frizzy_natural", label: "Пушистые / Натуральные" },
+  ],
+  color: [
+    { id: "platinum_blonde", label: "Платиновый блонд" },
+    { id: "honey_blonde", label: "Медовый блонд" },
+    { id: "dark_brunette", label: "Тёмный брюнет" },
+    { id: "chestnut_brown", label: "Каштановый" },
+    { id: "jet_black", label: "Иссиня-чёрный" },
+    { id: "copper_red", label: "Медный рыжий" },
+    { id: "pastel_pink", label: "Пастельный розовый" },
+    { id: "grey_silver", label: "Седой / Серебристый" },
+    { id: "salt_and_pepper", label: "С проседью" },
+  ],
+  condition: [
+    { id: "messy_bedhead", label: "Растрёпанные (Bedhead)" },
+    { id: "sleek_polished", label: "Гладкие / Уложенные" },
+    { id: "wet_look", label: "Влажный эффект" },
+    { id: "windblown", label: "Развевающиеся на ветру" },
+  ],
+};
