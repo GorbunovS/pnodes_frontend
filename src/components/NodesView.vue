@@ -42,12 +42,12 @@
     <Panel header="Промт-превью"
       class="absolute flex flex-col right-2.5 bottom-2.5 z-[100] w-1/3 max-h-1/2 overflow-auto p-3 rounded-xl border border-zinc-800 bg-black/80 text-white text-xs backdrop-blur-md shadow-2xl"
       toggleable>
-      <pre class="h-80 overflow-auto text-zinc-300 font-mono text-xs">{{ exportedJson }}</pre>
+      <pre class="h-80 overflow-auto  font-mono text-xs">{{ exportedJson }}</pre>
       <template #footer>
         <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
           <div class="flex items-center gap-2">
-            <Button raised label="Копировать" @click="copyJson" severity="secondary" icon="pi pi-copy" rounded text size="small"
-              class="!text-zinc-400 hover:!text-white"></Button>
+            <Button raised label="Копировать" @click="copyJson" severity="primary" icon="pi pi-copy" rounded text size="small"
+              ></Button>
             <Button raised icon="pi pi-bookmark" severity="secondary" rounded text size="small"
               class="!text-zinc-400 hover:!text-white"></Button>
           </div>
@@ -243,19 +243,9 @@ const exportedJson = computed(() => {
   background-color: rgb(240, 0, 240);
 }
 
-.baklaca-node-interface[data-interface-type="skin"] .__port {
+.baklava-node-interface[data-interface-type="skin"] .__port {
   background-color: rgb(0, 195, 255);
 }
 
-.baklava-editor {
-  --baklava-background-color: #09090b;
-  --baklava-grid-color: #27272a;
-}
 
-:root {
-  --baklava-background-color: #09090b;
-  /* zinc-950 */
-  --baklava-grid-color: #27272a;
-  /* zinc-800 */
-}
 </style>
