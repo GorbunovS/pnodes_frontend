@@ -1,11 +1,17 @@
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import HomePage from '../components/HomePage.vue'
+// import HomePage from '../components/HomePage.vue'
+import ErorrPage from '../components/ErorrPage.vue';
 import NodesView from '../components/NodesView.vue';
 
 const routes = [
-  { path: '/', component: HomePage },
-  { path: '/createPromt', component: NodesView },
+  { path: '/', component: ErorrPage },
+  { path: '/prompting', component: NodesView },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: ErorrPage,
+  },
 ]
 
 export const router = createRouter({

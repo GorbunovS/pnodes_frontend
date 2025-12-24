@@ -54,6 +54,11 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: 'SoyuzGroteskBold', sans-serif;
+
+  background-image: url('../src/assets/fog_bg.png'); 
+  background-repeat: no-repeat;
+  background-position: center bottom; 
+   background-size: contain;   
 }
 
 h1 {
@@ -65,7 +70,6 @@ h1 {
 #app {
   min-height: 100vh;
   width: 100vw;
-  background-color: #000; /* чёрный фон */
   color: #fff;
 }
 

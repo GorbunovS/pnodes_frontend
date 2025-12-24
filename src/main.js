@@ -16,10 +16,10 @@ app.use(router)
 const pnodes_preset = definePreset(Aura, {
     semantic: {
         primary: {
-            50: '#9EFFD5',
-            100: '#9EFFD5',
-            200: '#7fffc5',
-            300: '#60ffb5',
+            50: '#9EC8FF',
+            100: '#9EC8FF',
+            200: '#86bafdff',
+            300: '#70aeffff',
             400: '#9EFFD5',
             500: '#5dd9c1',
             600: '#3ab8a3',
@@ -41,7 +41,7 @@ const pnodes_preset = definePreset(Aura, {
                     200: '#262626',
                     300: '#404040',
                     400: '#9EC8FF',
-                    500: '#9EFFD5',
+                    500: '#9EC8FF',
                     600: '#9EC8FF',
                     700: '#ffffffff',
                     800: '#cccccc',
@@ -51,7 +51,7 @@ const pnodes_preset = definePreset(Aura, {
             },
             dark: {
                 primary: {
-                    color: '#9EFFD5',
+                    color: '#9EC8FF',
                     contrastColor: '#000000'
                 },
                 surface: {
@@ -61,7 +61,7 @@ const pnodes_preset = definePreset(Aura, {
                     200: '#262626',
                     300: '#404040',
                     400: '#9EC8FF',
-                    500: '#9EFFD5',
+                    500: '#9EC8FF',
                     600: '#9EC8FF',
                     700: '#ffffffff',
                     800: '#cccccc',

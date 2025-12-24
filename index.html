@@ -9,6 +9,12 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
+     <img
+    src="./src/assets/fog_boll.png"
+    alt=""
+    id="smoke"
+    class="smoke"
+  />
   </body>
 </html>
 <style>
@@ -16,5 +22,72 @@
     --baklava-background-color: #b3b3be;
     --baklava-grid-color: #1515ea;
 }
+.smoke {
+  position: fixed;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  opacity: 0.05;
+  transition: opacity 0.2s;  /* чтобы чуть плавнее мерцал */
+}
+
 
   </style>
+
+  <script> 
+  const smoke = document.getElementById('smoke')
+
+let mouseX = window.innerWidth / 2
+let mouseY = window.innerHeight * 0.9
+
+let smokeX = mouseX
+let smokeY = mouseY
+
+let lastX = mouseX
+let lastY = mouseY
+let lastTime = performance.now()
+
+const baseSize = 700        // базовый размер
+const maxExtraSize = 400      // максимум добавки к размеру
+let currentSize = baseSize
+
+const lerpFactor = 1     
+
+window.addEventListener('mousemove', (e) => {
+  mouseX = e.clientX
+
+  const viewportHeight = window.innerHeight
+  const minY = viewportHeight / 1.1
+  mouseY = Math.max(e.clientY, minY)
+})
+
+function animate(time) {
+  // плавное движение (инерция)
+  smokeX += (mouseX - smokeX) * lerpFactor
+  smokeY += (mouseY - smokeY) * lerpFactor
+
+  // скорость мыши
+  const dt = (time - lastTime) || 16
+  const dx = mouseX - lastX
+  const dy = mouseY - lastY
+  const distance = Math.hypot(dx, dy)
+  const speed = distance / dt     // пикселей / мс
+
+  // масштаб от скорости
+  const normalized = Math.min(speed * 15, 1)  // 0..1 (подкрути 15 под себя)
+  const targetSize = baseSize + maxExtraSize * normalized
+  currentSize += (targetSize - currentSize) * 0.2  // сглаживаем изменение размера
+
+  smoke.style.left = smokeX + 'px'
+  smoke.style.top = smokeY + 'px'
+  smoke.style.width = currentSize + 'px'
+
+  lastX = mouseX
+  lastY = mouseY
+  lastTime = time
+
+  requestAnimationFrame(animate)
+}
+
+requestAnimationFrame(animate)
+
+  </script>
