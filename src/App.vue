@@ -1,6 +1,6 @@
 <script setup>
-import NodesView from './components/NodesView.vue';
 
+import { RouterView } from 'vue-router';
 import { onMounted } from 'vue'
 
 onMounted(() => {
@@ -11,8 +11,7 @@ onMounted(() => {
 </script>
 
 <template>
-
-  <NodesView />
+<RouterView/>
 </template>
 
 <style scoped>
