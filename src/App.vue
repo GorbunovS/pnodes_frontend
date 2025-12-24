@@ -2,6 +2,7 @@
 
 import { RouterView } from 'vue-router';
 import { onMounted } from 'vue'
+import HeaderComp from './components/HeaderComp.vue';
 
 onMounted(() => {
     document.documentElement.classList.add('dark-mode')
@@ -11,6 +12,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <HeaderComp/>
 <RouterView/>
 </template>
 

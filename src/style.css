@@ -2,11 +2,12 @@
 @import 'primeicons/primeicons.css';
 /* @import 'line-awesome/dist/line-awesome/css/line-awesome.css'; */
 
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --main-font: 'Racama-U', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
+  font: 'SoyuzGrotesk';
   color-scheme: dark;
   color: #9EFFD5;
   background-color: #000000;
@@ -15,14 +16,27 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
+ 
   --baklava-background-color: #b3b3be;
   --baklava-grid-color: #1515ea;
 }
 
 
+@theme {
+  --color-primary: #9EC8FF;
+}
 
 
+@font-face {
+  font-family: "SoyuzGroteskBold";
+  src: url("../src/assets/fonts/Soyuz_Grotesk_Bold.otf") format("opentype");
+}
+@font-face {
+  font-family: 'Racama-U'; /* Название шрифта */
+  src: url('src/assets/fonts/Racama-U.otf') format('opentype'); /* Укажите путь к файлу */
+  font-weight: normal;
+  font-style: normal;
+}
 
 a {
   font-weight: 500;
@@ -39,6 +53,7 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  font-family: 'SoyuzGroteskBold', sans-serif;
 }
 
 h1 {
@@ -48,8 +63,12 @@ h1 {
 
 
 #app {
-
+  min-height: 100vh;
+  width: 100vw;
+  background-color: #000; /* чёрный фон */
+  color: #fff;
 }
+
 
 @media (prefers-color-scheme: light) {
   :root {
