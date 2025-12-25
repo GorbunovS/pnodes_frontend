@@ -1,9 +1,8 @@
 <script setup>
-import { useUserStore } from '../store'
+
 import AuthPage from './AuthPage.vue'
 
-
-
+import { useUserStore } from '../store'
 const userStore = useUserStore()
 </script>
 
