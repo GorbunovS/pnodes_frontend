@@ -10,6 +10,12 @@ export const useUserStore = defineStore("user", {
     setUser(user) {
       this.user = user;
     },
+
+    logout() {
+      this.user = null;
+      this.token = null;
+      localStorage.removeItem("yandex_token");
+    },
     setToken(token) {
       this.token = token;
       localStorage.setItem("yandex_token", token);

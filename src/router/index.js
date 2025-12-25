@@ -4,11 +4,14 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import ErorrPage from '../components/ErorrPage.vue';
 import NodesView from '../components/NodesView.vue';
 import AuthPage from '../components/AuthPage.vue';
+import ProfileView from '../components/ProfileView.vue';
+
+
 
 const routes = [
   { path: '/', component: ErorrPage },
   { path: '/prompting', component: NodesView },
-  { path: '/profile', component: AuthPage },
+  { path: '/profile', component:  ProfileView  },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
