@@ -35,8 +35,7 @@
 </template>
 
 <script setup>
-import logo from '../assets/logo_1x1.svg'
-import row_logo from '../assets/p_nodes.svg'
+import row_logo from '../assets/P_nodes.svg'
 import yandex_logo from '../assets/ya.png'
 import google_logo from '../assets/g.png'
 const collageImages = [
