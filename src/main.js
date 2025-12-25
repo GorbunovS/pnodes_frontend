@@ -7,7 +7,9 @@ import { definePreset } from "@primeuix/themes";
 import Aura from "@primeuix/themes/aura";
 import ToastService from "primevue/toastservice";
 import { router } from "./router";
+import { createPinia } from 'pinia'
 
+const pinia = createPinia()
 const app = createApp(App);
 app.component("Button", Button);
 app.use(router)
@@ -94,4 +96,5 @@ app.use(PrimeVue, {
 
 
 app.use(ToastService);
+app.use(pinia)
 app.mount("#app");
