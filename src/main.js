@@ -7,9 +7,12 @@ import { definePreset } from "@primeuix/themes";
 import Aura from "@primeuix/themes/aura";
 import ToastService from "primevue/toastservice";
 import { router } from "./router";
+import { createPinia } from 'pinia'
 
+const pinia = createPinia()
 const app = createApp(App);
 app.component("Button", Button);
+app.use(pinia)
 app.use(router)
 
 
@@ -72,16 +75,6 @@ const pnodes_preset = definePreset(Aura, {
         }
     }
 });
-
-app.use(PrimeVue, {
-    theme: {
-        preset: pnodes_preset,
-        options: {
-            cssLayer: false
-        }
-    }
-});
-
 
 app.use(PrimeVue, {
     theme: {

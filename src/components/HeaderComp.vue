@@ -32,12 +32,21 @@
         </span>
       </nav>
 
+       <div v-if="userStore.user">
+        <img 
+          :src="userStore.user.default_avatar_id 
+            ? `https://avatars.yandex.net/get-yapic/${userStore.user.default_avatar_id}/islands-200` 
+            : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'" 
+          class="h-10 w-10 rounded-full object-cover cursor-pointer" 
+        />
+      </div>
       
-
-      <button class="flex items-center gap-2 text-lg">
-        <span class="uppercase">rus</span>
-        <span class="h-4 w-2 bg-white"></span>
-      </button>
+      <!-- ИНАЧЕ показываем кнопку "Войти" -->
+      <div v-else>
+         <Button @click="setPage('profile')" class="text-sm font-bold text-primary hover:underline">
+           Войти
+         </Button>
+      </div>
     </div>
   </header>
 </template>
@@ -45,6 +54,8 @@
 <script setup>
 import { defineEmits, ref } from 'vue';
 import logo from '../assets/P_nodes.svg'
+import { useUserStore } from '../store'
+const userStore = useUserStore()
 
 const currentPage = ref('community')
 const emit = defineEmits(['change-page'])
