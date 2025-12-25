@@ -1,12 +1,12 @@
 <template>
-    <div class="flex h-screen w-full  overflow-hidden bg-black text-white font-sans">
+    <div class="flex h-screen w-full  overflow-hidden bg-black text-white ">
         <div class="flex h-full flex-1 flex-col items-center justify-between pb-40 pt-40 px-4 relative z-10">
             <div
-                class="mb-20 flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-neutral-800 text-4xl font-bold">
+                class="mb-20 flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-neutral-800 text-4xl ">
                 <img :src="logo" />
             </div>
             <div class="flex w-full max-w-[320px] flex-col gap-3">
-                <span class="ml-1 mb-1 text-sm text-neutral-500 font-medium">вход</span>
+                <span class="ml-1 mb-1 text-sm text-neutral-500 font-medium">Войти с помощью</span>
 
                 <Button severity="contrast" variant="outlined">
                     <img class="w-5" :src="yandex_logo" />
