@@ -32,14 +32,21 @@
         </span>
       </nav>
 
-      
-
-      <img 
+       <div v-if="userStore.user">
+        <img 
           :src="userStore.user.default_avatar_id 
             ? `https://avatars.yandex.net/get-yapic/${userStore.user.default_avatar_id}/islands-200` 
             : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'" 
-          class="h-10 w-10 rounded-full object-cover" 
+          class="h-10 w-10 rounded-full object-cover cursor-pointer" 
         />
+      </div>
+      
+      <!-- ИНАЧЕ показываем кнопку "Войти" -->
+      <div v-else>
+         <Button @click="setPage('profile')" class="text-sm font-bold text-primary hover:underline">
+           Войти
+         </Button>
+      </div>
     </div>
   </header>
 </template>
