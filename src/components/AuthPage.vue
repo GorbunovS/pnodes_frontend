@@ -1,5 +1,5 @@
 <template>
-    <div class="flex h-screen w-full  overflow-hidden bg-black text-white ">
+    <div class="flex h-screen w-full  overflow-hidden text-white ">
         <div class="flex h-full flex-1 flex-col items-center justify-between pb-40 pt-40 px-4 relative z-10">
 
                 <img class="h-20" :src="logo" />
@@ -7,7 +7,7 @@
             <div class="flex w-full max-w-[320px] flex-col gap-3">
                 <span class="ml-1 mb-1 text-sm text-neutral-500 font-medium">Войти с помощью</span>
 
-                <Button severity="contrast" variant="outlined">
+                <Button @click="loginWithYandex" severity="contrast" variant="outlined">
                     <img class="w-5" :src="yandex_logo" />
                     Яндекс
                 </Button>
@@ -44,4 +44,11 @@ const collageImages = [
     { src: 'https://d8j0ntlcm91z4.cloudfront.net/user_36icwpEe7kvGumBplwxXiRVESNH/a4e74991-dafd-4f32-b38a-b01ecc1e239f_min.webp', class: '' }, 
     { src: 'https://d8j0ntlcm91z4.cloudfront.net/user_36eKnJxOSWym6vz8XxWA9hyGSZH/06bfcca1-cfe0-4c7c-8aaf-a71c00e25516_min.webp', class: '' },
 ]
+
+const redirectUri = import.meta.env.VITE_REDIRECT_URI;
+const clientId = import.meta.env.VITE_YANDEX_CLIENT_ID;
+
+const loginWithYandex = () => {
+  window.location.href = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
+};
 </script>
