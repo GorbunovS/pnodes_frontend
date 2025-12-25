@@ -1,10 +1,9 @@
 <template>
     <div class="flex h-screen w-full  overflow-hidden bg-black text-white ">
         <div class="flex h-full flex-1 flex-col items-center justify-between pb-40 pt-40 px-4 relative z-10">
-            <div
-                class="mb-20 flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-neutral-800 text-4xl ">
-                <img :src="logo" />
-            </div>
+
+                <img class="h-20" :src="logo" />
+            
             <div class="flex w-full max-w-[320px] flex-col gap-3">
                 <span class="ml-1 mb-1 text-sm text-neutral-500 font-medium">Войти с помощью</span>
 
@@ -18,7 +17,7 @@
                 <Button label="VK" severity="primary" />
             </div>
             <section class="flex flex-col items-center gap-3">
-                <img :src="row_logo" alt="P nodes" class="h-10" />
+                <img :src="row_logo"  class="h-10" />
                 <p class="text-xl text-gray-400">
                     нодовый конструктор промптов
                 </p>
@@ -35,7 +34,8 @@
 </template>
 
 <script setup>
-import row_logo from '../assets/P_nodes.svg'
+    import logo from '../assets/logo_1x1.svg'
+import row_logo from '../assets/p_nodes.svg'
 import yandex_logo from '../assets/ya.png'
 import google_logo from '../assets/g.png'
 const collageImages = [
