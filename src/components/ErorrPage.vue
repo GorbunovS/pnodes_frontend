@@ -1,6 +1,6 @@
 <template>
   <main
-    class="min-h-screen bg-black text-white flex flex-col items-center justify-between pb-100 pt-24 pb-16"
+    class="min-h-[90vh] bg-black text-white flex flex-col items-center justify-between pb-20 pt-24"
   >
 
 

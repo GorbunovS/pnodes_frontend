@@ -1,7 +1,6 @@
 <template>
   <Toast/>
-  <div class="w-screen h-screen relative overflow-hidden">
-
+  <div class="w-screen h-[90vh]  relative overflow-auto">
     <BaklavaEditor :view-model="baklava">
       <template #palette>
         <Panel header="Библиотека нод"
