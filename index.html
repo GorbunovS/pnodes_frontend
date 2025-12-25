@@ -89,10 +89,6 @@ function animate(time) {
 }
 
 requestAnimationFrame(animate)
-
-  </script>
-  <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script>
-<script>
   window.YaAuthSuggest.init(
     {
       client_id: "f95826a56ebf4246b5ce7349ad22b7dc",
@@ -113,4 +109,6 @@ requestAnimationFrame(animate)
   .then(({handler}) => handler())
   .then(data => console.log('Токен получен:', data))
   .catch(error => console.log('Ошибка:', error))
-</script>
+  </script>
+
+
