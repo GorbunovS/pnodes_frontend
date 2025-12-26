@@ -1,8 +1,6 @@
 <template>
   <Toast/>
-  <div v-if="userStore.user" class="w-screen h-screen relative overflow-hidden">
-
-
+  <div v-if="userStore.user" class="w-[100%] h-[95vh] relative overflow-hidden">
     <BaklavaEditor :view-model="baklava">
       <template #palette>
         <Panel header="Библиотека нод"

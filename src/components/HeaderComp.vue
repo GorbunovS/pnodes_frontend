@@ -32,7 +32,7 @@
         </span>
       </nav>
 
-       <div v-if="userStore.user">
+       <div @click="setPage('profile')" v-if="userStore.user">
         <img 
           :src="userStore.user.default_avatar_id 
             ? `https://avatars.yandex.net/get-yapic/${userStore.user.default_avatar_id}/islands-200` 
