@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-[95vh] text-white flex flex-col items-center justify-center gap-50 ">
+    <div v-if="userStore.user" class="min-h-[95vh] text-white flex flex-col items-center justify-center gap-50 ">
         <div class="main-block w-[50%] min-h-[95vh]  border-l border-r border-slate-700 ">
             <div class="tabs ">
                 <Tabs value="0">
@@ -7,7 +7,6 @@
                         <Tab value="0">Мои <i class="pi pi-user" /> </Tab>
                         <Tab value="1">Опубликованные <i class="pi pi-globe" /></Tab>
                         <Tab value="2">Создать <i class="pi pi-plus" /></Tab>
-
                     </TabList>
                     <TabPanels>
                         <TabPanel value="0">
@@ -35,6 +34,7 @@
             </div>
         </div>
     </div>
+      <AuthPage v-else />
 </template>
 
 <script setup>
@@ -47,8 +47,13 @@ import TabPanel from 'primevue/tabpanel';
 import TemplateCardMini from './TemplateCardMini.vue';
 import ProjCard from './ProjCard.vue';
 import { useRouter } from 'vue-router';
+import AuthPage from '../AuthPage.vue';
+import { useUserStore } from '../../store';
 
+const userStore = useUserStore()
 const router = useRouter();
+
+
 
 const createNewTemplate = (item) => {
     if (item.available === false) return

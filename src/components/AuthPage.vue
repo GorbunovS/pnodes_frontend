@@ -11,10 +11,10 @@
                     <img class="w-5" :src="yandex_logo" />
                     Яндекс
                 </Button>
-                <Button severity="contrast" variant="outlined"><img class="w-5" :src="google_logo" />
+                <Button severity="contrast" disabled variant="outlined"><img class="w-5" :src="google_logo" />
                     Google
                 </Button>
-                <Button label="VK" severity="primary" />
+                <Button label="VK" disabled severity="primary" />
             </div>
             <section class="flex flex-col items-center gap-3">
                 <img :src="row_logo"  class="h-10" />
