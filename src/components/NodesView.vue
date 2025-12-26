@@ -1,6 +1,8 @@
 <template>
   <Toast/>
-  <div class="w-screen h-[90vh]  relative overflow-auto">
+  <div v-if="userStore.user" class="w-screen h-screen relative overflow-hidden">
+
+
     <BaklavaEditor :view-model="baklava">
       <template #palette>
         <Panel header="Библиотека нод"
@@ -54,13 +56,16 @@
         </div>
       </template>
     </Panel>
-
   </div>
+  <AuthPage v-else />
 </template>
 
 <script setup>
 import { computed, ref, onMounted } from "vue";
 import { useToast } from 'primevue/usetoast';
+import { useUserStore } from '../store'
+import AuthPage from './AuthPage.vue'
+const userStore = useUserStore()
 import Toast from 'primevue/toast';
 const toast = useToast();
 
