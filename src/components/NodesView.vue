@@ -47,7 +47,7 @@
           <div class="flex items-center gap-2">
             <Button raised label="Копировать" @click="copyJson" severity="primary" icon="pi pi-copy" rounded text size="small"
               ></Button>
-            <Button raised icon="pi pi-bookmark" severity="secondary" rounded text size="small"
+            <Button @click="saveProject" raised icon="pi pi-bookmark" severity="secondary" rounded text size="small"
               class="!text-zinc-400 hover:!text-white"></Button>
           </div>
           <span class="text-zinc-600 font-mono">{{ exportedJson.length }} chars</span>
@@ -59,38 +59,47 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
+import { useRoute } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
-import { useUserStore } from '../store'
-import AuthPage from './AuthPage.vue'
-const userStore = useUserStore()
+import { useUserStore } from '../store';
+import AuthPage from './AuthPage.vue';
 import Toast from 'primevue/toast';
-const toast = useToast();
-
 import { BaklavaEditor, useBaklava } from "baklavajs";
 import { Panel } from "primevue";
 import Button from "primevue/button";
 import Tree from 'primevue/tree';
 import SelectButton from 'primevue/selectbutton';
-import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets } from "./nodes/presets";
 import "@baklavajs/themes/dist/syrup-dark.css";
 import { BaklavaInterfaceTypes } from "@baklavajs/interface-types";
 import { copyToClipboard } from "../utils/helpers";
 
+import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets } from "./nodes/presets";
 import { characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType } from "./nodes/types";
 import { CompositionNode, CharacterNode, LightingNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode } from "../components/nodes/nodes";
-
-
 import { exportSceneTemplateFromBaklavaState } from "../utils/exportScene";
 import { exportPersonTemplateFromBaklavaState } from "../utils/exportPerson";
+import { PROJECTS_MOCK } from "../data/ProjMocks";
+
+const userStore = useUserStore();
+const toast = useToast();
+const route = useRoute();
 
 const baklava = useBaklava();
 const editor = baklava.editor;
 
-
 const nodeInterfaceTypes = new BaklavaInterfaceTypes(editor, { viewPlugin: baklava });
 nodeInterfaceTypes.addTypes(characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType);
 
+editor.registerNodeType(CompositionNode);
+editor.registerNodeType(CharacterNode);
+editor.registerNodeType(CharacterFullNode);
+editor.registerNodeType(LightingNode);
+editor.registerNodeType(SkinNode);
+editor.registerNodeType(NoseNode);
+editor.registerNodeType(MouthNode);
+editor.registerNodeType(EyesNode);
+editor.registerNodeType(HairNode);
 
 const modes = [
   { label: 'Полный режим', value: 'all' },
@@ -98,34 +107,54 @@ const modes = [
   { label: 'Сцена', value: 'scene' }
 ];
 
-
 const currentMode = ref('person');
+const tick = ref(0);
+const expandedKeys = ref({ 'scene': true, 'char_simple_group': true, 'char_advanced_group': true, 'equip': true });
 
-const copyJson = async ()  => {
-  try { 
+const loadProjectFromMock = () => {
+  const projectId = route.params.templateId;
+  if (!projectId) toast.add({ severity: 'error', summary: 'Error', detail: 'Проект не выбран', life: 1000 });
+
+  const projectData = PROJECTS_MOCK[projectId];
+
+  if (projectData) {
+    toast.add({ severity: 'success', summary: 'Success', detail: 'Проект загружен', life: 1000 });
+    try {
+      editor.load(projectData);
+      showToast("done");
+      console.log(`Проект ${projectId} успешно загружен`);
+    } catch (e) {
+      console.error("Ошибка при загрузке проекта:", e);
+      showToast("error");
+    }
+  } else {
+    console.warn(projectId,"Проект с таким ID не найден в моках");
+  }
+};
+
+const copyJson = async () => {
+  try {
     await copyToClipboard(exportedJson.value);
     showToast("done");
-  }
-  catch (error) {
+  } catch (error) {
     console.error(error);
-     showToast("error");
+    showToast("error");
   }
 }
 
-
 const showToast = (arg) => {
   if (arg === "done") {
-    toast.add({ severity: 'success', summary: 'Success', detail: 'Промт скопирован', life: 1000 });
+    toast.add({ severity: 'success', summary: 'Success', detail: 'Готово', life: 1000 });
+  } else if (arg === "error") {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Ошибка', life: 1000 });
   }
-  else if (arg === "error") {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Message Content', life: 1000 });
-  }
-  
 };
 
-onMounted(() => {
-  setInterval(() => tick.value++, 250);
-});
+const saveProject = () => {
+  const rawState = editor.save();
+  showToast("done");
+  console.log("Baklava JSON:", JSON.stringify(rawState, null, 2));
+}
 
 const allNodeGroups = {
   composition: {
@@ -151,7 +180,7 @@ const allNodeGroups = {
     children: [
       { key: 'char_full', label: 'Мастер Персонаж', icon: 'pi pi-user', data: { type: CharacterFullNode } },
       { key: 'skin', label: 'Кожа', icon: 'pi pi-plus', data: { type: SkinNode } },
-      { key: 'nose', label: 'Нос', icon: 'pi pi-plus', data: { type: NoseNode } }, // Иконки условные
+      { key: 'nose', label: 'Нос', icon: 'pi pi-plus', data: { type: NoseNode } },
       { key: 'mouth', label: 'Рот', icon: 'pi pi-plus', data: { type: MouthNode } },
       { key: 'eyes', label: 'Глаза', icon: 'pi pi-plus', data: { type: EyesNode } },
       { key: 'hair', label: 'Волосы', icon: 'pi pi-plus', data: { type: HairNode } },
@@ -167,23 +196,17 @@ const allNodeGroups = {
   }
 };
 
-
 const nodes = computed(() => {
   if (currentMode.value === 'person') {
-
     return [allNodeGroups.advanced_char];
   }
-
   if (currentMode.value === 'scene') {
-
     return [
       allNodeGroups.composition,
       allNodeGroups.simple_char,
       allNodeGroups.equipment
     ];
   }
-
-
   return [
     allNodeGroups.composition,
     allNodeGroups.simple_char,
@@ -192,14 +215,10 @@ const nodes = computed(() => {
   ];
 });
 
-const expandedKeys = ref({ 'scene': true, 'char_simple_group': true, 'char_advanced_group': true, 'equip': true });
-
-
 const onNodeSelect = (node) => {
   if (node.data && node.data.type) {
     const instance = new node.data.type();
     editor.graph.addNode(instance);
-
 
     if (!instance.position) instance.position = { x: 0, y: 0 };
     instance.position.x = 500 + (Math.random() * 50);
@@ -207,7 +226,6 @@ const onNodeSelect = (node) => {
   }
 };
 
-const tick = ref(0);
 const graph = computed(() => editor.graph);
 
 const exportedJson = computed(() => {
@@ -229,10 +247,21 @@ const exportedJson = computed(() => {
   }
 });
 
+onMounted(() => {
+  setInterval(() => tick.value++, 250);
+  
+    loadProjectFromMock();
+
+});
+
+watch(() => route.params.id, (newId) => {
+  if (newId) loadProjectFromMock();
+});
 </script>
 
+
 <style>
-/* Только оригинальные стили для портов */
+
 .baklava-node-interface[data-interface-type="character"] .__port {
   background-color: rgb(210, 251, 210);
 }
