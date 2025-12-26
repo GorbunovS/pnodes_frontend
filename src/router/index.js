@@ -8,9 +8,11 @@ import ProfileView from '../components/ProfileView.vue';
 import ManLibView from '../components/userLib/ManLibView.vue';
 
 const routes = [
-  { path: '/', component: ErorrPage },
-  { path: '/prompting/editor/:templateId', component: NodesView },
+  
+ 
   { path: '/prompting', component: ManLibView },
+   { path: '/prompting/editor/:templateId', component: NodesView },
+  { path: '/community', component: ErorrPage },
   { path: '/profile', component:  ProfileView  },
   {
     path: '/:pathMatch(.*)*',

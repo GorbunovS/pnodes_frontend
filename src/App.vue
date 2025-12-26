@@ -16,17 +16,12 @@ onMounted(() => {
     document.documentElement.style.colorScheme = 'dark'
 })
 
-function handleChangePage(page) {
-  if (page === 'community') router.push('/')
-  if (page === 'profile') router.push('/profile')
-  if (page === 'prompting') router.push('/prompting')
-}
 
 </script>
 
 <template>
-  <HeaderComp @change-page="handleChangePage" />
-<RouterView/>
+<HeaderComp />
+<RouterView />
 </template>
 
 <style scoped>

@@ -52,17 +52,29 @@
 </template>
 
 <script setup>
-import { defineEmits, ref } from 'vue';
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router'; // Импортируем хуки роутера
 import logo from '../assets/P_nodes.svg'
 import { useUserStore } from '../store'
-const userStore = useUserStore()
 
-const currentPage = ref('community')
-const emit = defineEmits(['change-page'])
+const userStore = useUserStore()
+const route = useRoute()     // Текущий маршрут (информация)
+const router = useRouter()   // Сам роутер (для переходов)
+
+// Вычисляем активную вкладку на основе текущего пути
+const currentPage = computed(() => {
+  if (route.path.includes('/community')) return 'community';
+  if (route.path.includes('/prompting')) return 'prompting';
+  if (route.path.includes('/profile')) return 'profile';
+  return ''; // или дефолт
+})
 
 function setPage(page) {
-  currentPage.value = page
-  emit('change-page', page)
+  // Просто пушим в роутер, а currentPage сам обновится благодаря computed
+  if (page === 'community') router.push('/community')
+  if (page === 'prompting') router.push('/prompting')
+  if (page === 'profile') router.push('/profile')
 }
 </script>
+
 
