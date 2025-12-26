@@ -4,7 +4,7 @@
         <section class="flex flex-col items-center gap-6 text-center">
             <img :src="erorrSvg" alt="404" class="h-50" />
 
-            <p class="max-w-2xl text-2xl text-gray-300 leading-relaxed">
+            <p class="max-w-2xl  text-gray-300 leading-relaxed">
                 страницы не существует или находится в разработке.
                 подпишитесь на наш телеграм, чтобы следить за обновлениями.
             </p>
@@ -15,7 +15,6 @@
             </Button>
         </section>
 
-        <!-- Нижний блок -->
         <section class="flex flex-col items-center gap-3">
 
             <img :src="logo" alt="P nodes" class="h-20" />

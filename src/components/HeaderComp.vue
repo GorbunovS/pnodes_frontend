@@ -6,6 +6,13 @@
       </div>
 
       <nav class="flex items-center gap-12 text-lg">
+        <span 
+          class="cursor-pointer transition-colors"
+          :class="currentPage === 'home' ? 'text-primary' : 'text-white hover:text-primary'"
+          @click="setPage('home')"
+        >
+        Главная
+        </span>
         <span
           class="cursor-pointer transition-colors"
           :class="currentPage === 'community' ? 'text-primary' : 'text-white hover:text-primary'"
@@ -63,6 +70,7 @@ const router = useRouter()   // Сам роутер (для переходов)
 
 // Вычисляем активную вкладку на основе текущего пути
 const currentPage = computed(() => {
+  if (route.path === '/') return 'home';
   if (route.path.includes('/community')) return 'community';
   if (route.path.includes('/prompting')) return 'prompting';
   if (route.path.includes('/profile')) return 'profile';
@@ -70,7 +78,7 @@ const currentPage = computed(() => {
 })
 
 function setPage(page) {
-  // Просто пушим в роутер, а currentPage сам обновится благодаря computed
+  if (page === 'home') router.push('/')
   if (page === 'community') router.push('/community')
   if (page === 'prompting') router.push('/prompting')
   if (page === 'profile') router.push('/profile')

@@ -63,7 +63,7 @@ const createNewTemplate = (item) => {
 }
 
 const openTemplate = (id) => {
-    router.push('/prompting/editor/' + id)
+    router.push('/prompting/' + id)
 }
 
 const templatesMocks = [
