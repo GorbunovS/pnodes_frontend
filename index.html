@@ -24,6 +24,7 @@
   pointer-events: none;
   transform: translate(-50%, -50%);
   opacity: 0.05;
+  
   transition: opacity 0.2s;  /* чтобы чуть плавнее мерцал */
 }
 
@@ -43,7 +44,7 @@ let lastX = mouseX
 let lastY = mouseY
 let lastTime = performance.now()
 
-const baseSize = 700        // базовый размер
+const baseSize = 1000        // базовый размер
 const maxExtraSize = 400      // максимум добавки к размеру
 let currentSize = baseSize
 
@@ -84,7 +85,7 @@ function animate(time) {
 
   requestAnimationFrame(animate)
 }
-
+ requestAnimationFrame(animate) 
 
   </script>
 

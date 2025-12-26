@@ -1,10 +1,10 @@
 <template>
-    <main class="min-h-[90vh] bg-black text-white flex flex-col items-center justify-between pb-20 pt-24">
+    <main class="min-h-[95vh] text-white flex flex-col items-center justify-center gap-50 ">
 
         <section class="flex flex-col items-center gap-6 text-center">
-            <h1 class="text-10xl font-bold tracking-tight">404</h1>
+            <img :src="erorrSvg" alt="404" class="h-100" />
 
-            <p class="max-w-md text-sm text-gray-300 leading-relaxed">
+            <p class="max-w-2xl text-2xl text-gray-300 leading-relaxed">
                 страницы не существует или находится в разработке.
                 подпишитесь на наш телеграм, чтобы следить за обновлениями.
             </p>
@@ -19,7 +19,7 @@
         <section class="flex flex-col items-center gap-3">
 
             <img :src="logo" alt="P nodes" class="h-20" />
-            <p class="text-xs text-gray-400">
+            <p class="text-xl text-gray-400">
                 нодовый конструктор промптов
             </p>
         </section>
@@ -28,5 +28,6 @@
 
 <script setup>
 import logo from '../assets/logo_1x1.svg'
+import erorrSvg from '../assets/404.svg'
 
 </script>
