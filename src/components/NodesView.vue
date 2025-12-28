@@ -1,7 +1,7 @@
 <template>
   <Toast />
   <div v-if="userStore.user" class="w-[100%] h-[95vh] relative overflow-hidden">
-    Режим: {{ currentMode }}
+    Режим: {{ currentMode }}/id: {{ route.params.templateId }}
     <BaklavaEditor :view-model="baklava">
       <template #palette>
         <Panel header="Библиотека нод"
@@ -114,7 +114,6 @@ const expandedKeys = ref({ 'scene': true, 'char_simple_group': true, 'char_advan
 
 const loadProjectFromMock = () => {
   const projectId = route.params.templateId;
-
   if (!projectId) toast.add({ severity: 'error', summary: 'Error', detail: 'Проект не выбран', life: 1000 });
 
   const projectData = PROJECTS_MOCK[projectId];
@@ -152,11 +151,11 @@ const showToast = (arg) => {
   }
 };
 
-const saveProject = () => {
-  const rawState = editor.save();
-  showToast("done");
-  console.log("Baklava JSON:", JSON.stringify(rawState, null, 2));
-}
+// const saveProject = () => {
+//   const rawState = editor.save();
+//   showToast("done");
+//   console.log("Baklava JSON:", JSON.stringify(rawState, null, 2));
+// }
 
 const allNodeGroups = {
   composition: {
@@ -208,18 +207,17 @@ const allNodeGroups = {
 };
 
 const nodes = computed(() => {
+  console.log('nodes recomputed, currentMode:', currentMode.value);
   if (currentMode.value === 'default') {
     return [allNodeGroups.advanced_char];
   }
-  if (currentMode.value === 'selfie') {
+  if (currentMode.value === 'hero') {
     return [
-      allNodeGroups.composition,
-      allNodeGroups.simple_char,
-      allNodeGroups.equipment,
+      allNodeGroups.advanced_char
 
     ];
   }
-  if (currentMode.value === 'hero') {
+  if (currentMode.value === 'selfie') {
     return [
       allNodeGroups.composition,
       allNodeGroups.simple_char,
