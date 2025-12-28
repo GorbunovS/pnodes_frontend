@@ -12,7 +12,7 @@
                         <TabPanel value="0">
                             <p class="m-0">
                             <div class="flex flex-wrap gap-4">
-                                <TemplateCardMini v-for="item in templatesMocks" :key="item.id" v-bind="item" @click="openTemplate(item.id)" />
+                                <TemplateCardMini v-for="item in templatesMocks" :key="item.id" v-bind="item" @click="openTemplate(item.id, item.type)" />
                             </div>
                             </p>
                         </TabPanel>
@@ -58,21 +58,29 @@ const router = useRouter();
 const createNewTemplate = (item) => {
     if (item.available === false) return
     else {
-    router.push('/prompting/editor/1')
+    router.push('/prompting/1')
     }
 }
 
-const openTemplate = (id) => {
-    router.push('/prompting/' + id)
-}
+const openTemplate = (id, type) => {
+  router.push(`/prompting/${id}/${type}`);
+};
+
 
 const templatesMocks = [
     {
         id: 1,
-        name: "Геральд",
-        date: "22/03",
-        type: "HERO"
+        name: 'Персонаж',
+        date: '22/03',
+        type: 'hero'
+    }, 
+    {
+        id: 2,
+        name: 'Селфи',
+        date: '22/03',
+        type: 'selfie'
     }
+
 ]
 
 const projectTemplates = [

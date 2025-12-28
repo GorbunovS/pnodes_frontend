@@ -29,6 +29,7 @@ export function exportSceneTemplateFromBaklavaState(state, { lightingPresets } =
   };
 
   const sceneDescription = composition.inputs?.description?.value ?? "{ОПИСАНИЕ_СЦЕНЫ}";
+  const usePhotoReference = composition.inputs?.use_photo_reference?.value ?? false;
 
   const characterNodes = getConnectedNodesToInput(state, composition, "character");
   const envNodes = getConnectedNodesToInput(state, composition, "environment");
@@ -47,12 +48,22 @@ export function exportSceneTemplateFromBaklavaState(state, { lightingPresets } =
     weight_kg: n?.inputs?.weight?.value ?? "{ВЕС_КГ}",
   }));
 
-  const environment = envNodes.length
-    ? envNodes.map(n => ({
-        setting: n?.inputs?.setting?.value ?? "{ЛОКАЦИЯ}",
-        atmosphere: n?.inputs?.atmosphere?.value ?? "{АТМОСФЕРА}",
-      }))
-    : [{ setting: "{ЛОКАЦИЯ}", atmosphere: "{АТМОСФЕРА}" }];
+const environment = envNodes.length
+  ? envNodes.map(n => ({
+      scene_type: n?.inputs?.scene_type?.value,
+      background_mood: n?.inputs?.background_mood?.value,
+      camera_framing: n?.inputs?.camera_framing?.value,
+      atmosphere: n?.inputs?.atmosphere?.value,
+      description: n?.inputs?.description?.value || "",
+    }))
+  : [{
+      scene_type: "studio_clean_minimal",
+      background_mood: "soft_depth_of_field",
+      camera_framing: "portrait_midshot",                                                                                                                   
+      atmosphere: "soft_airy",
+      description: "",
+    }].map(env => env.map(v => v || "default")); // не надо
+
 
   const lighting = lightNodes.length
     ? lightNodes.map(n => {
@@ -79,6 +90,7 @@ export function exportSceneTemplateFromBaklavaState(state, { lightingPresets } =
     metadata: {
       image_type: "photograph",
       primary_purpose: "social media/portrait",
+      use_photo_reference: usePhotoReference
     },
     variable_context: {
       scene_context: { description: sceneDescription },

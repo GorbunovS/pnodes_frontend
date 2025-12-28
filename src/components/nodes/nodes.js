@@ -24,7 +24,7 @@ import {
   hairType,
   eyeType,
 } from "./types";
-import { mouthPresets, eyePresets, hairPresets, lightingPresets,  nosePresets, skinPresets } from "./presets";
+import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets, envPresets } from "./presets";
 
 
 
@@ -61,6 +61,12 @@ export const CompositionNode = defineNode({
         .use(allowMultipleConnections)
         .use(setTypeForMultipleConnections, characterType),
 
+    use_photo_reference: () =>
+      new SelectInterface("Фото референс", false, [
+        { text: "Без референса", value: false },
+        { text: "Использовать фото‑референс", value: true },
+      ]).setPort(false),
+
     description: () =>
       new TextInputInterface("Описание", "Базовая сцена").setPort(false),
   },
@@ -86,6 +92,40 @@ export const LightingNode = defineNode({
     light: () => new NodeInterface("Light", null).use(setType, lightType),
   },
 });
+
+export const EnvironmentNode = defineNode({
+  type: "EnvironmentNode",
+  title: "Окружение (presets)",
+  inputs: {
+    scene_type: () =>
+      makeSelect(
+        "Тип сцены",
+        "studio_clean_minimal",
+        envPresets.sceneType
+      ),
+    background_mood: () =>
+      makeSelect(
+        "Фон / Настроение",
+        "soft_depth_of_field",
+        envPresets.backgroundMood
+      ),
+    camera_framing: () =>
+      makeSelect(
+        "Кадрирование",
+        "portrait_midshot",
+        envPresets.cameraFraming
+      ),
+    description: () =>
+      new TextInputInterface(
+        "Описание (детали окружения)"
+      ).setPort(false),
+  },
+  outputs: {
+    environment: () =>
+      new NodeInterface("Окружение", null).use(setType, environmentType),
+  },
+});
+
 
 export const CharacterNode = defineNode({
   type: "CharacterNode",

@@ -11,7 +11,7 @@ const routes = [
   
  { path: '/', component: HomePage },
   { path: '/prompting', component: ManLibView },
-   { path: '/prompting/:templateId', component: NodesView },
+   { path: '/prompting/:templateId/:type', component: NodesView },
   { path: '/community', component: ErorrPage },
   { path: '/profile', component:  ProfileView  },
   {

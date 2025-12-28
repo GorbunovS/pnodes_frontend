@@ -1,6 +1,7 @@
 <template>
-  <Toast/>
+  <Toast />
   <div v-if="userStore.user" class="w-[100%] h-[95vh] relative overflow-hidden">
+    Режим: {{ currentMode }}
     <BaklavaEditor :view-model="baklava">
       <template #palette>
         <Panel header="Библиотека нод"
@@ -45,8 +46,8 @@
       <template #footer>
         <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
           <div class="flex items-center gap-2">
-            <Button raised label="Копировать" @click="copyJson" severity="primary" icon="pi pi-copy" rounded text size="small"
-              ></Button>
+            <Button raised label="Копировать" @click="copyJson" severity="primary" icon="pi pi-copy" rounded text
+              size="small"></Button>
             <Button @click="saveProject" raised icon="pi pi-bookmark" severity="secondary" rounded text size="small"
               class="!text-zinc-400 hover:!text-white"></Button>
           </div>
@@ -69,17 +70,18 @@ import { BaklavaEditor, useBaklava } from "baklavajs";
 import { Panel } from "primevue";
 import Button from "primevue/button";
 import Tree from 'primevue/tree';
-import SelectButton from 'primevue/selectbutton';
 import "@baklavajs/themes/dist/syrup-dark.css";
 import { BaklavaInterfaceTypes } from "@baklavajs/interface-types";
 import { copyToClipboard } from "../utils/helpers";
 
 import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets } from "./nodes/presets";
 import { characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType } from "./nodes/types";
-import { CompositionNode, CharacterNode, LightingNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode } from "../components/nodes/nodes";
+import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, } from "../components/nodes/nodes";
 import { exportSceneTemplateFromBaklavaState } from "../utils/exportScene";
 import { exportPersonTemplateFromBaklavaState } from "../utils/exportPerson";
 import { PROJECTS_MOCK } from "../data/ProjMocks";
+
+
 
 const userStore = useUserStore();
 const toast = useToast();
@@ -95,24 +97,24 @@ editor.registerNodeType(CompositionNode);
 editor.registerNodeType(CharacterNode);
 editor.registerNodeType(CharacterFullNode);
 editor.registerNodeType(LightingNode);
+editor.registerNodeType(EnvironmentNode)
 editor.registerNodeType(SkinNode);
 editor.registerNodeType(NoseNode);
 editor.registerNodeType(MouthNode);
 editor.registerNodeType(EyesNode);
 editor.registerNodeType(HairNode);
 
-const modes = [
-  { label: 'Полный режим', value: 'all' },
-  { label: 'Конструктор Персоны', value: 'person' },
-  { label: 'Сцена', value: 'scene' }
-];
 
-const currentMode = ref('person');
+const currentMode = ref('default');
 const tick = ref(0);
 const expandedKeys = ref({ 'scene': true, 'char_simple_group': true, 'char_advanced_group': true, 'equip': true });
 
+
+
+
 const loadProjectFromMock = () => {
   const projectId = route.params.templateId;
+
   if (!projectId) toast.add({ severity: 'error', summary: 'Error', detail: 'Проект не выбран', life: 1000 });
 
   const projectData = PROJECTS_MOCK[projectId];
@@ -128,7 +130,7 @@ const loadProjectFromMock = () => {
       showToast("error");
     }
   } else {
-    console.warn(projectId,"Проект с таким ID не найден в моках");
+    console.warn(projectId, "Проект с таким ID не найден в моках");
   }
 };
 
@@ -162,7 +164,8 @@ const allNodeGroups = {
     label: 'Сцена',
     icon: 'pi pi-globe',
     children: [
-      { key: 'comp', label: 'Композиция', icon: 'pi pi-image', data: { type: CompositionNode } }
+      { key: 'comp', label: 'Композиция', icon: 'pi pi-image', data: { type: CompositionNode } },
+      { key: 'env', label: 'Окружение', icon: 'pi pi-plus', data: { type: EnvironmentNode } }
     ]
   },
   simple_char: {
@@ -193,19 +196,36 @@ const allNodeGroups = {
     children: [
       { key: 'light', label: 'Источник света', icon: 'pi pi-plus', data: { type: LightingNode } }
     ]
+  },
+  environments: {
+    key: 'env',
+    label: 'Окружение',
+    icons: 'pi pi-sun',
+    children: [
+      { key: 'env', label: 'Окружени', icon: 'pi pi-plus', data: { type: EnvironmentNode } }
+    ]
   }
 };
 
 const nodes = computed(() => {
-  if (currentMode.value === 'person') {
+  if (currentMode.value === 'default') {
     return [allNodeGroups.advanced_char];
   }
-  if (currentMode.value === 'scene') {
+  if (currentMode.value === 'selfie') {
+    return [
+      allNodeGroups.composition,
+      allNodeGroups.simple_char,
+      allNodeGroups.equipment,
+
+    ];
+  }
+  if (currentMode.value === 'hero') {
     return [
       allNodeGroups.composition,
       allNodeGroups.simple_char,
       allNodeGroups.equipment
-    ];
+
+    ]
   }
   return [
     allNodeGroups.composition,
@@ -230,6 +250,8 @@ const graph = computed(() => editor.graph);
 
 const exportedJson = computed(() => {
   void tick.value;
+  // const baklavaJson = editor.graph.save();
+  // console.log(JSON.stringify(baklavaJson, null, 2)); // раскоменнтить если захочу сделать новый пресет
   try {
     const state = graph.value.save();
     const hasFullChar = state.nodes.some(n => n.type === "CharacterFullNode");
@@ -248,20 +270,27 @@ const exportedJson = computed(() => {
 });
 
 onMounted(() => {
+  console.log('initial params', route.params);
+  currentMode.value = route.params.type;
   setInterval(() => tick.value++, 250);
-  
-    loadProjectFromMock();
+
+  loadProjectFromMock();
 
 });
 
 watch(() => route.params.id, (newId) => {
   if (newId) loadProjectFromMock();
 });
+
+watch(() => route.params.type, (newType) => {
+  console.log('initial params', route.params);
+  if (newType) currentMode.value = route.params.type
+}
+);
 </script>
 
 
 <style>
-
 .baklava-node-interface[data-interface-type="character"] .__port {
   background-color: rgb(210, 251, 210);
 }
@@ -277,6 +306,4 @@ watch(() => route.params.id, (newId) => {
 .baklava-node-interface[data-interface-type="skin"] .__port {
   background-color: rgb(0, 195, 255);
 }
-
-
 </style>

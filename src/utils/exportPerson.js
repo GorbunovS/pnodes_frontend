@@ -1,5 +1,4 @@
-// Вспомогательные функции поиска (можно переиспользовать из exportScene, если они экспортированы,
-// но здесь продублирую для автономности, либо импортируй их)
+
 function findNodesByOutputInterfaceIds(state, interfaceIdsSet) {
   return state.nodes.filter(n =>
     Object.values(n.outputs || {}).some(out => out && interfaceIdsSet.has(out.id))
@@ -12,21 +11,16 @@ function getConnectedNodeToInput(state, node, inputKey) {
 
   const conns = state.connections.filter(c => c.to === input.id);
   if (!conns.length) return null;
-
-  // Берем первую ноду (так как input у нас обычно single connection для частей тела)
-  // Если у тебя allowMultipleConnections для частей тела, используй filter/map как раньше
   const fromId = conns[0].from;
   return state.nodes.find(n => 
     Object.values(n.outputs || {}).some(out => out.id === fromId)
   );
 }
 
-// Хелпер для получения значения селекта (ID)
+
 const getVal = (node, key, def) => node?.inputs?.[key]?.value ?? def;
 
 export function exportPersonTemplateFromBaklavaState(state, { skinPresets, nosePresets, mouthPresets, eyePresets, hairPresets } = {}) {
-  // 1. Ищем CharacterFullNode (или CharacterNode, если нужно)
-  // Если в графе несколько персонажей, можно искать всех, но для примера берем первого найденного
   const charNode = state.nodes.find(n => n.type === "CharacterFullNode");
 
   if (!charNode) {
@@ -36,18 +30,17 @@ export function exportPersonTemplateFromBaklavaState(state, { skinPresets, noseP
     };
   }
 
-  // 2. Получаем подключенные ноды частей тела
+
   const skinNode = getConnectedNodeToInput(state, charNode, "skin");
   const noseNode = getConnectedNodeToInput(state, charNode, "nose");
   const mouthNode = getConnectedNodeToInput(state, charNode, "mouth");
   const eyesNode = getConnectedNodeToInput(state, charNode, "eyes");
   const hairNode = getConnectedNodeToInput(state, charNode, "hair");
 
-  // 3. Собираем данные (Values)
-  // Gender/Age/Etc
+
   const gender = getVal(charNode, "gender", "female");
   const age = getVal(charNode, "age", 25);
-  const role = "fashion_agency_model"; // Хардкод или добавь в ноду
+  const role = "fashion_agency_model";
   const desc = getVal(charNode, "description", "");
 
   // --- SKIN ---
@@ -89,7 +82,7 @@ export function exportPersonTemplateFromBaklavaState(state, { skinPresets, noseP
     subject: {
       type: "person",
       gender: gender,
-      age_range: age < 30 ? "young_adult" : "adult",
+      age_range: age ,
       role: role,
       likeness_reference: {
         description: desc || "resembles a famous Hollywood actress with soft features",
