@@ -76,7 +76,7 @@ import { copyToClipboard } from "../utils/helpers";
 
 import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets } from "./nodes/presets";
 import { characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType } from "./nodes/types";
-import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, } from "../components/nodes/nodes";
+import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, ResultNode } from "../components/nodes/nodes";
 import { exportSceneTemplateFromBaklavaState } from "../utils/exportScene";
 import { exportPersonTemplateFromBaklavaState } from "../utils/exportPerson";
 import { PROJECTS_MOCK } from "../data/ProjMocks";
@@ -101,6 +101,7 @@ editor.registerNodeType(NoseNode);
 editor.registerNodeType(MouthNode);
 editor.registerNodeType(EyesNode);
 editor.registerNodeType(HairNode);
+editor.registerNodeType(ResultNode);
 
 // --- ИСПРАВЛЕНИЕ 1: Правильные типы Props ---
 const props = defineProps({
@@ -114,20 +115,25 @@ const props = defineProps({
   }
 })
 
-// --- ИСПРАВЛЕНИЕ 2: Объявляем реактивную переменную currentMode ---
+const getJson = () => {
+    // Получаем объект состояния
+    const state = editor.save();
+    
+    // Превращаем в строку (если нужно скопировать или отправить на бэк)
+    const jsonString = JSON.stringify(state, null, 2); 
+    
+    console.log(jsonString);
+    return jsonString;
+}
+
 const currentMode = ref(props.templateMode); 
 
 const tick = ref(0);
 const expandedKeys = ref({ 'scene': true, 'char_simple_group': true, 'char_advanced_group': true, 'equip': true });
 
 const loadProjectFromMock = () => {
-  // Используем props вместо route, так как компонент получает данные через props
+
   const projectId = props.templateId;
-  
-  // 0 - это валидный ID, поэтому проверяем на undefined/null, если нужно, или оставляем как есть
-  // Если у вас ID начинаются с 1, то условие if (!projectId) сработает верно.
-  // Если есть ID=0, то лучше писать if (projectId === undefined)
-  
   const projectData = PROJECTS_MOCK[projectId];
 
   if (projectData) {
@@ -146,7 +152,9 @@ const loadProjectFromMock = () => {
 };
 
 const copyJson = async () => {
+  getJson();
   try {
+    
     await copyToClipboard(exportedJson.value);
     showToast("done");
   } catch (error) {
@@ -192,6 +200,7 @@ const allNodeGroups = {
       { key: 'mouth', label: 'Рот', icon: 'pi pi-plus', data: { type: MouthNode } },
       { key: 'eyes', label: 'Глаза', icon: 'pi pi-plus', data: { type: EyesNode } },
       { key: 'hair', label: 'Волосы', icon: 'pi pi-plus', data: { type: HairNode } },
+      
     ]
   },
   equipment: {
@@ -208,6 +217,14 @@ const allNodeGroups = {
     icons: 'pi pi-sun',
     children: [
       { key: 'env', label: 'Окружени', icon: 'pi pi-plus', data: { type: EnvironmentNode } }
+    ]
+  }, 
+  other: {
+    key: 'other',
+    label: 'Другое',
+    icon: 'pi pi-sun',
+    children: [
+     {key:'result',label:'Результат',icon:'pi pi-plus',data:{type:ResultNode}}
     ]
   }
 };
@@ -226,7 +243,8 @@ const nodes = computed(() => {
     return [
       allNodeGroups.composition,
       allNodeGroups.simple_char,
-      allNodeGroups.equipment
+      allNodeGroups.equipment,
+      allNodeGroups.other
     ]
   }
   return [
@@ -269,9 +287,7 @@ const exportedJson = computed(() => {
   }
 });
 
-// --- ИСПРАВЛЕНИЕ 4: Watchers для Props ---
 
-// Следим за изменением templateId
 watch(() => props.templateId, (newId) => {
     console.log('Template ID changed to:', newId);
     if (newId !== undefined) {
@@ -279,7 +295,7 @@ watch(() => props.templateId, (newId) => {
     }
 });
 
-// Следим за изменением templateMode
+
 watch(() => props.templateMode, (newMode) => {
     console.log('Template Mode changed to:', newMode);
     currentMode.value = newMode;
@@ -287,10 +303,11 @@ watch(() => props.templateMode, (newMode) => {
 });
 
 onMounted(() => {
-  // Инициализация при монтировании
+
   currentMode.value = props.templateMode;
   setInterval(() => tick.value++, 250);
   loadProjectFromMock();
+  
 });
 </script>
 

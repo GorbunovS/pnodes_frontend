@@ -136,7 +136,8 @@ const closeProjectTab = (uniqueTabId) => {
 
 const templatesMocks = [
     { id: 1, name: 'Персонаж', date: 'demo', type: 'person' },
-    { id: 2, name: 'Селфи', date: 'demo', type: 'selfie' }
+    { id: 2, name: 'Селфи', date: 'demo', type: 'selfie' },
+    { id: 3, name: 'Новый год', date: 'demo', type: 'selfie' },
 ];
 
 const projectTemplates = [

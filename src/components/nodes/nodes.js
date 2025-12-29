@@ -7,7 +7,8 @@ import {
   SelectInterface,
   EditorComponent,
 } from "baklavajs";
-
+import { markRaw } from "vue";
+import ImageInput from "./custom_nodes/ImageInput.vue";
 import {
   setType,
   setTypeForMultipleConnections,
@@ -94,39 +95,19 @@ export const LightingNode = defineNode({
 });
 
 export const EnvironmentNode = defineNode({
-  type: "EnvironmentNode",
-  title: "Окружение (presets)",
-  inputs: {
-    scene_type: () =>
-      makeSelect(
-        "Тип сцены",
-        "studio_clean_minimal",
-        envPresets.sceneType
-      ),
-    background_mood: () =>
-      makeSelect(
-        "Фон / Настроение",
-        "soft_depth_of_field",
-        envPresets.backgroundMood
-      ),
-    camera_framing: () =>
-      makeSelect(
-        "Кадрирование",
-        "portrait_midshot",
-        envPresets.cameraFraming
-      ),
-    description: () =>
-      new TextInputInterface(
-        "Описание (детали окружения)"
-      ).setPort(false),
-  },
-  outputs: {
-    environment: () =>
-      new NodeInterface("Окружение", null).use(setType, environmentType),
-  },
+    type: "EnvironmentNode",
+    title: "Окружение (presets)",
+    inputs: {
+        scene_type: () => new TextInputInterface("Место", "Фото студия (лофт)", envPresets.sceneType).setPort(false),
+        background_mood: () => makeSelect("Фон / Настроение", "soft_depth_of_field", envPresets.backgroundMood),
+        camera_framing: () => makeSelect("Кадрирование", "portrait_midshot", envPresets.cameraFraming),
+        description: () => new TextInputInterface("Описание").setPort(false),
+    },
+    outputs: {
+        environment: () => new NodeInterface("Окружение", null).use(setType, environmentType),
+    },
+  
 });
-
-
 export const CharacterNode = defineNode({
   type: "CharacterNode",
   title: "Персонаж",
@@ -269,4 +250,30 @@ export const HairNode = defineNode({
   outputs: {
     hair: () => new NodeInterface("Волосы", null).use(setType, hairType),
   },
+});
+
+export const ResultNode = defineNode({
+    type: "ResultNode",
+    title: "Результат (Генерация)",
+    width: 1350,
+
+    inputs: {
+        // 1. Кастомная картинка (тут setComponent нужен, т.к. ImageInput - наш)
+        image: () => new NodeInterface("Изображение", null)
+            .setPort(false)
+            .setComponent(markRaw(ImageInput)),
+        aiModel: () => new SelectInterface("AI Model", "Midjourney", [
+                "Midjourney", 
+                "Stable Diffusion", 
+                "DALL-E 3", 
+                "Flux", 
+                "Nano Banano",
+                "Другое"
+            ]).setPort(false),
+
+
+        description: () => new TextInputInterface("Описание", "")
+            .setPort(false)
+    },
+    outputs: {}
 });
