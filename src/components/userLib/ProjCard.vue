@@ -46,7 +46,7 @@ const props = defineProps({
   type: {
     type: String,
     default: 'default', 
-    validator: (value) => ['hero', 'selfie', 'fashion', 'cinematic', 'default'].includes(value)
+    validator: (value) => ['person', 'selfie', 'fashion', 'cinematic', 'default'].includes(value)
   },
   available: {
     type: Boolean,
@@ -57,7 +57,7 @@ const props = defineProps({
 // Подбираем градиент под каждый тип (примерно как на скрине)
 const gradientClasses = computed(() => {
   switch (props.type) {
-    case 'hero':
+    case 'person':
       return 'from-[#82f4e2] to-[#99c5ff]'; // Мятный -> Голубой
     case 'selfie':
       return 'from-[#8cf7d9] to-[#92baff]'; // Чуть зеленее -> Синий

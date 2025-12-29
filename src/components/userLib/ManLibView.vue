@@ -135,15 +135,15 @@ const closeProjectTab = (uniqueTabId) => {
 };
 
 const templatesMocks = [
-    { id: 1, name: 'Персонаж', date: 'demo', type: 'hero' },
+    { id: 1, name: 'Персонаж', date: 'demo', type: 'person' },
     { id: 2, name: 'Селфи', date: 'demo', type: 'selfie' }
 ];
 
 const projectTemplates = [
     {
         id: 1,
-        title: 'hero',
-        type: 'hero',
+        title: 'person',
+        type: 'person',
         description: 'создай шаблон персонажа и используй его в других генерациях',
         available: true
     },

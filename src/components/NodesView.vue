@@ -219,7 +219,7 @@ const nodes = computed(() => {
   if (props.templateMode === 'default') {
     return [allNodeGroups.advanced_char];
   }
-  if (props.templateMode === 'hero') {
+  if (props.templateMode === 'person') {
     return [allNodeGroups.advanced_char];
   }
   if (props.templateMode === 'selfie') {

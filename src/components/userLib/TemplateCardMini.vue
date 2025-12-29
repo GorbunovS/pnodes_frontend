@@ -18,7 +18,7 @@ const props = defineProps({
     type: String
 })
 const typeColors = {
-    hero: 'text-blue-400',       // Пример: Синий
+    person: 'text-blue-400',       // Пример: Синий
     selfie: 'text-pink-400',     // Пример: Розовый
     CINEMATIC: 'text-amber-400', // Пример: Золотой/Янтарный
     FASHION: 'text-purple-400'   // Пример: Фиолетовый
