@@ -1,7 +1,7 @@
 <template>
   <Toast />
-  <div v-if="userStore.user" class="w-[100%] h-[95vh] relative overflow-hidden">
-    Режим: {{ currentMode }}/id: {{ route.params.templateId }}
+  <div v-if="userStore.user" class="w-[100%] h-[90vh] relative overflow-hidden">
+    <!-- Режим: {{ currentMode }}/id: {{ route.params.templateId }} -->
     <BaklavaEditor :view-model="baklava">
       <template #palette>
         <Panel header="Библиотека нод"
@@ -60,10 +60,10 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, watch } from "vue";
+import { computed, ref, onMounted, watch } from "vue"; // убрал defineProps из импорта (он макрос)
 import { useRoute } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
-import { useUserStore } from '../store';
+import { useUserStore } from '../store/user';
 import AuthPage from './AuthPage.vue';
 import Toast from 'primevue/toast';
 import { BaklavaEditor, useBaklava } from "baklavajs";
@@ -80,8 +80,6 @@ import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, Characte
 import { exportSceneTemplateFromBaklavaState } from "../utils/exportScene";
 import { exportPersonTemplateFromBaklavaState } from "../utils/exportPerson";
 import { PROJECTS_MOCK } from "../data/ProjMocks";
-
-
 
 const userStore = useUserStore();
 const toast = useToast();
@@ -104,22 +102,36 @@ editor.registerNodeType(MouthNode);
 editor.registerNodeType(EyesNode);
 editor.registerNodeType(HairNode);
 
+// --- ИСПРАВЛЕНИЕ 1: Правильные типы Props ---
+const props = defineProps({
+  templateId: {
+    type: Number,
+    default: 0
+  }, 
+  templateMode: {
+    type: String,
+    default: 'default'
+  }
+})
 
-const currentMode = ref('default');
+// --- ИСПРАВЛЕНИЕ 2: Объявляем реактивную переменную currentMode ---
+const currentMode = ref(props.templateMode); 
+
 const tick = ref(0);
 const expandedKeys = ref({ 'scene': true, 'char_simple_group': true, 'char_advanced_group': true, 'equip': true });
 
-
-
-
 const loadProjectFromMock = () => {
-  const projectId = route.params.templateId;
-  if (!projectId) toast.add({ severity: 'error', summary: 'Error', detail: 'Проект не выбран', life: 1000 });
-
+  // Используем props вместо route, так как компонент получает данные через props
+  const projectId = props.templateId;
+  
+  // 0 - это валидный ID, поэтому проверяем на undefined/null, если нужно, или оставляем как есть
+  // Если у вас ID начинаются с 1, то условие if (!projectId) сработает верно.
+  // Если есть ID=0, то лучше писать if (projectId === undefined)
+  
   const projectData = PROJECTS_MOCK[projectId];
 
   if (projectData) {
-    toast.add({ severity: 'success', summary: 'Success', detail: 'Проект загружен', life: 1000 });
+    // toast.add({ severity: 'success', summary: 'Success', detail: 'Проект загружен', life: 1000 });
     try {
       editor.load(projectData);
       showToast("done");
@@ -150,12 +162,6 @@ const showToast = (arg) => {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Ошибка', life: 1000 });
   }
 };
-
-// const saveProject = () => {
-//   const rawState = editor.save();
-//   showToast("done");
-//   console.log("Baklava JSON:", JSON.stringify(rawState, null, 2));
-// }
 
 const allNodeGroups = {
   composition: {
@@ -207,22 +213,20 @@ const allNodeGroups = {
 };
 
 const nodes = computed(() => {
-  console.log('nodes recomputed, currentMode:', currentMode.value);
-  if (currentMode.value === 'default') {
+  // --- ИСПРАВЛЕНИЕ 3: Используем props.templateMode вместо props.mode ---
+  console.log('nodes recomputed, currentMode:', props.templateMode);
+  
+  if (props.templateMode === 'default') {
     return [allNodeGroups.advanced_char];
   }
-  if (currentMode.value === 'hero') {
-    return [
-      allNodeGroups.advanced_char
-
-    ];
+  if (props.templateMode === 'hero') {
+    return [allNodeGroups.advanced_char];
   }
-  if (currentMode.value === 'selfie') {
+  if (props.templateMode === 'selfie') {
     return [
       allNodeGroups.composition,
       allNodeGroups.simple_char,
       allNodeGroups.equipment
-
     ]
   }
   return [
@@ -248,8 +252,6 @@ const graph = computed(() => editor.graph);
 
 const exportedJson = computed(() => {
   void tick.value;
-  // const baklavaJson = editor.graph.save();
-  // console.log(JSON.stringify(baklavaJson, null, 2)); // раскоменнтить если захочу сделать новый пресет
   try {
     const state = graph.value.save();
     const hasFullChar = state.nodes.some(n => n.type === "CharacterFullNode");
@@ -267,25 +269,31 @@ const exportedJson = computed(() => {
   }
 });
 
+// --- ИСПРАВЛЕНИЕ 4: Watchers для Props ---
+
+// Следим за изменением templateId
+watch(() => props.templateId, (newId) => {
+    console.log('Template ID changed to:', newId);
+    if (newId !== undefined) {
+        loadProjectFromMock();
+    }
+});
+
+// Следим за изменением templateMode
+watch(() => props.templateMode, (newMode) => {
+    console.log('Template Mode changed to:', newMode);
+    currentMode.value = newMode;
+    // computed свойство 'nodes' обновится автоматически, так как зависит от props.templateMode
+});
+
 onMounted(() => {
-  console.log('initial params', route.params);
-  currentMode.value = route.params.type;
+  // Инициализация при монтировании
+  currentMode.value = props.templateMode;
   setInterval(() => tick.value++, 250);
-
   loadProjectFromMock();
-
 });
-
-watch(() => route.params.id, (newId) => {
-  if (newId) loadProjectFromMock();
-});
-
-watch(() => route.params.type, (newType) => {
-  console.log('initial params', route.params);
-  if (newType) currentMode.value = route.params.type
-}
-);
 </script>
+
 
 
 <style>
