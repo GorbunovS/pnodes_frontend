@@ -62,7 +62,7 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router'; // Импортируем хуки роутера
 import logo from '../assets/P_nodes.svg'
-import { useUserStore } from '../store'
+import { useUserStore } from '../store/user'
 
 const userStore = useUserStore()
 const route = useRoute()     // Текущий маршрут (информация)

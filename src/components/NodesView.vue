@@ -1,7 +1,7 @@
 <template>
   <Toast />
-  <div v-if="userStore.user" class="w-[100%] h-[95vh] relative overflow-hidden">
-    Режим: {{ currentMode }}/id: {{ route.params.templateId }}
+  <div v-if="userStore.user" class="w-[100%] h-[90vh] relative overflow-hidden">
+    <!-- Режим: {{ currentMode }}/id: {{ route.params.templateId }} -->
     <BaklavaEditor :view-model="baklava">
       <template #palette>
         <Panel header="Библиотека нод"
@@ -61,10 +61,10 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, watch } from "vue";
+import { computed, ref, onMounted, watch } from "vue"; // убрал defineProps из импорта (он макрос)
 import { useRoute } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
-import { useUserStore } from '../store';
+import { useUserStore } from '../store/user';
 import AuthPage from './AuthPage.vue';
 import Toast from 'primevue/toast';
 import { BaklavaEditor, useBaklava } from "baklavajs";
@@ -77,12 +77,10 @@ import { copyToClipboard } from "../utils/helpers";
 
 import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets } from "./nodes/presets";
 import { characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType } from "./nodes/types";
-import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, } from "../components/nodes/nodes";
+import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, ResultNode } from "../components/nodes/nodes";
 import { exportSceneTemplateFromBaklavaState } from "../utils/exportScene";
 import { exportPersonTemplateFromBaklavaState } from "../utils/exportPerson";
 import { PROJECTS_MOCK } from "../data/ProjMocks";
-
-
 
 const userStore = useUserStore();
 const toast = useToast();
@@ -104,23 +102,43 @@ editor.registerNodeType(NoseNode);
 editor.registerNodeType(MouthNode);
 editor.registerNodeType(EyesNode);
 editor.registerNodeType(HairNode);
+editor.registerNodeType(ResultNode);
 
+// --- ИСПРАВЛЕНИЕ 1: Правильные типы Props ---
+const props = defineProps({
+  templateId: {
+    type: Number,
+    default: 0
+  }, 
+  templateMode: {
+    type: String,
+    default: 'default'
+  }
+})
 
-const currentMode = ref('default');
+const getJson = () => {
+    // Получаем объект состояния
+    const state = editor.save();
+    
+    // Превращаем в строку (если нужно скопировать или отправить на бэк)
+    const jsonString = JSON.stringify(state, null, 2); 
+    
+    console.log(jsonString);
+    return jsonString;
+}
+
+const currentMode = ref(props.templateMode); 
+
 const tick = ref(0);
 const expandedKeys = ref({ 'scene': true, 'char_simple_group': true, 'char_advanced_group': true, 'equip': true });
 
-
-
-
 const loadProjectFromMock = () => {
-  const projectId = route.params.templateId;
-  if (!projectId) toast.add({ severity: 'error', summary: 'Error', detail: 'Проект не выбран', life: 1000 });
 
+  const projectId = props.templateId;
   const projectData = PROJECTS_MOCK[projectId];
 
   if (projectData) {
-    toast.add({ severity: 'success', summary: 'Success', detail: 'Проект загружен', life: 1000 });
+    // toast.add({ severity: 'success', summary: 'Success', detail: 'Проект загружен', life: 1000 });
     try {
       editor.load(projectData);
       showToast("done");
@@ -135,7 +153,9 @@ const loadProjectFromMock = () => {
 };
 
 const copyJson = async () => {
+  getJson();
   try {
+    
     await copyToClipboard(exportedJson.value);
     showToast("done");
   } catch (error) {
@@ -151,12 +171,6 @@ const showToast = (arg) => {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Ошибка', life: 1000 });
   }
 };
-
-// const saveProject = () => {
-//   const rawState = editor.save();
-//   showToast("done");
-//   console.log("Baklava JSON:", JSON.stringify(rawState, null, 2));
-// }
 
 const allNodeGroups = {
   composition: {
@@ -187,6 +201,7 @@ const allNodeGroups = {
       { key: 'mouth', label: 'Рот', icon: 'pi pi-plus', data: { type: MouthNode } },
       { key: 'eyes', label: 'Глаза', icon: 'pi pi-plus', data: { type: EyesNode } },
       { key: 'hair', label: 'Волосы', icon: 'pi pi-plus', data: { type: HairNode } },
+      
     ]
   },
   equipment: {
@@ -204,26 +219,33 @@ const allNodeGroups = {
     children: [
       { key: 'env', label: 'Окружени', icon: 'pi pi-plus', data: { type: EnvironmentNode } }
     ]
+  }, 
+  other: {
+    key: 'other',
+    label: 'Другое',
+    icon: 'pi pi-sun',
+    children: [
+     {key:'result',label:'Результат',icon:'pi pi-plus',data:{type:ResultNode}}
+    ]
   }
 };
 
 const nodes = computed(() => {
-  console.log('nodes recomputed, currentMode:', currentMode.value);
-  if (currentMode.value === 'default') {
+  // --- ИСПРАВЛЕНИЕ 3: Используем props.templateMode вместо props.mode ---
+  console.log('nodes recomputed, currentMode:', props.templateMode);
+  
+  if (props.templateMode === 'default') {
     return [allNodeGroups.advanced_char];
   }
-  if (currentMode.value === 'hero') {
-    return [
-      allNodeGroups.advanced_char
-
-    ];
+  if (props.templateMode === 'person') {
+    return [allNodeGroups.advanced_char];
   }
-  if (currentMode.value === 'selfie') {
+  if (props.templateMode === 'selfie') {
     return [
       allNodeGroups.composition,
       allNodeGroups.simple_char,
-      allNodeGroups.equipment
-
+      allNodeGroups.equipment,
+      allNodeGroups.other
     ]
   }
   return [
@@ -249,8 +271,6 @@ const graph = computed(() => editor.graph);
 
 const exportedJson = computed(() => {
   void tick.value;
-  // const baklavaJson = editor.graph.save();
-  // console.log(JSON.stringify(baklavaJson, null, 2)); // раскоменнтить если захочу сделать новый пресет
   try {
     const state = graph.value.save();
     const hasFullChar = state.nodes.some(n => n.type === "CharacterFullNode");
@@ -268,25 +288,30 @@ const exportedJson = computed(() => {
   }
 });
 
+
+watch(() => props.templateId, (newId) => {
+    console.log('Template ID changed to:', newId);
+    if (newId !== undefined) {
+        loadProjectFromMock();
+    }
+});
+
+
+watch(() => props.templateMode, (newMode) => {
+    console.log('Template Mode changed to:', newMode);
+    currentMode.value = newMode;
+    // computed свойство 'nodes' обновится автоматически, так как зависит от props.templateMode
+});
+
 onMounted(() => {
-  console.log('initial params', route.params);
-  currentMode.value = route.params.type;
+
+  currentMode.value = props.templateMode;
   setInterval(() => tick.value++, 250);
-
   loadProjectFromMock();
-
+  
 });
-
-watch(() => route.params.id, (newId) => {
-  if (newId) loadProjectFromMock();
-});
-
-watch(() => route.params.type, (newType) => {
-  console.log('initial params', route.params);
-  if (newType) currentMode.value = route.params.type
-}
-);
 </script>
+
 
 
 <style>

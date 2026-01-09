@@ -56,6 +56,18 @@ a:hover {
   background: transparent !important;
 }
 
+/* Обращаемся к ноде по типу */
+.baklava-node[data-node-type="ResultNode"] {
+    width: 350px !important; /* !important может понадобиться, если стиль перебивается инлайном */
+    max-width: 350px;
+}
+
+/* На всякий случай, если структура DOM немного другая в вашей версии */
+.node[data-type="ResultNode"] {
+    width: 350px !important;
+}
+
+
 
 body {
   margin: 0;

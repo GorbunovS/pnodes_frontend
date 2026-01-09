@@ -9,6 +9,8 @@ export const envPresets = {
     { id: "seaside_sunset", label: "Пляж на закате" },
     { id: "sci_fi_lab", label: "Sci‑Fi лаборатория" },
     { id: "cinema_stage", label: "Кинематографическая площадка" },
+    { id: "other", label: "Свой вариант" },
+    
   ],
   backgroundMood: [
     { id: "clean_minimal", label: "Чистый/минималистичный фон" },
