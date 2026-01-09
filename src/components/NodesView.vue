@@ -50,6 +50,7 @@
               size="small"></Button>
             <Button @click="saveProject" raised icon="pi pi-bookmark" severity="secondary" rounded text size="small"
               class="!text-zinc-400 hover:!text-white"></Button>
+              <Button label="Сгенерировать(beta)"></Button>
           </div>
           <span class="text-zinc-600 font-mono">{{ exportedJson.length }} chars</span>
         </div>
