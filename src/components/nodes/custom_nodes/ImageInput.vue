@@ -1,14 +1,19 @@
 <!-- components/nodes/custom_nodes/ImageInput.vue -->
 <script setup>
-import { computed, ref, onMounted } from "vue";
+import { computed, ref } from "vue";
+import { storeToRefs } from "pinia";
+import { useAiApiStore } from "../../../store/aistore";
+const aistore = useAiApiStore()
 
-// Baklava передает value через modelValue
+const { result } = storeToRefs(aistore);
+
+
 const props = defineProps({
-  modelValue: { type: [String, Object], default: null }, // Может прийти null или строка base64
+  modelValue: { type: [String, Object], default: null }, 
 });
 
 const emit = defineEmits(["update:modelValue"]);
-const fileInput = ref(null);
+
 
 const imageData = computed({
   get: () => props.modelValue,
@@ -23,6 +28,7 @@ const processFile = (file) => {
   };
   reader.readAsDataURL(file);
 };
+
 
 const handleFileChange = (e) => processFile(e.target.files?.[0]);
 
@@ -49,24 +55,17 @@ const handlePaste = (e) => {
   <div 
     class="image-uploader"
     tabindex="0"
-    @paste="handlePaste"
-    @click="fileInput?.click()"
-    @dragover.prevent
-    @drop="handleDrop"
   >
-    <img v-if="imageData" :src="imageData" class="preview-img" />
+    <img v-if="result" :src="result" class="preview-img" />
     
     <div v-else class="placeholder">
       <i class="pi pi-image" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.7;"></i>
-      <span>Paste / Drag / Click</span>
+      <span> Результат генерации </span>
     </div>
 
-    <input ref="fileInput" type="file" accept="image/*" class="hidden-input" @change="handleFileChange" />
+
     
-    <!-- Кнопка очистки -->
-    <button v-if="imageData" @click.stop="imageData = null" class="clear-btn">
-      ✕
-    </button>
+
   </div>
 </template>
 
@@ -83,13 +82,10 @@ const handlePaste = (e) => {
   position: relative;
   cursor: pointer;
   transition: all 0.2s;
-  outline: none; /* Убираем синюю обводку фокуса */
+  outline: none; 
 }
 
-.image-uploader:hover, .image-uploader:focus {
-  border-color: #888;
-  background-color: rgba(0, 0, 0, 0.3);
-}
+
 
 .preview-img {
   width: 100%;

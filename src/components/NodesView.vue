@@ -84,13 +84,13 @@
         </Panel>
       </template>
     </BaklavaEditor>
-
+<!-- 
     <Panel 
       header="Результат последней генерации (beta)" 
       class="absolute flex flex-col right-2.5 top-2.5 z-[100] w-1/5 max-h-1/2 overflow-auto p-3 rounded-xl border border-zinc-800 bg-black/80 text-white text-xs backdrop-blur-md shadow-2xl"
     >
       <Image :src="imageResult" width="250" preview></Image>
-    </Panel>
+    </Panel> -->
 
     <Panel 
       header="Промт-превью"
@@ -129,7 +129,7 @@ import "@baklavajs/themes/dist/syrup-dark.css";
 import { BaklavaInterfaceTypes } from "@baklavajs/interface-types";
 import { copyToClipboard } from "../utils/helpers";
 import { useAiApiStore } from "../store/aistore";
-import { Image } from "primevue";
+
 import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets } from "./nodes/presets";
 import { characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType } from "./nodes/types";
 import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, ResultNode } from "../components/nodes/nodes";
@@ -146,11 +146,14 @@ const toast = useToast();
 const route = useRoute();
 const aistore = useAiApiStore();
 
+
 const tokenDialog = ref(false);
 const newToken = ref('');
 
 const baklava = useBaklava();
+const viewModel = baklava.viewModel;     
 const editor = baklava.editor;
+
 
 const imageResult = computed(() => aistore.result);
 
@@ -171,8 +174,13 @@ editor.registerNodeType(ResultNode);
 
 const props = defineProps({
   templateId: { type: Number, default: 0 },
-  templateMode: { type: String, default: 'default' }
+  templateMode: { type: String, default: 'default' },
+  isOpen:{
+    type: Boolean, default: false
+  }
 });
+
+
 
 const getJson = () => {
   const state = editor.save();
@@ -184,11 +192,8 @@ const generate = async () => {
     tokenDialog.value = true
     return
   }
-
   try {
-
     const promptText = exportedJson.value   
-
     await aistore.generateImage(promptText, { width: 1024, height: 1024 })
     toast.add({ severity: 'success', summary: 'Генерация запущена!', life: 3000 })
   } catch (err) {
@@ -283,6 +288,7 @@ const allNodeGroups = {
       { key: 'mouth', label: 'Рот', icon: 'pi pi-plus', data: { type: MouthNode } },
       { key: 'eyes', label: 'Глаза', icon: 'pi pi-plus', data: { type: EyesNode } },
       { key: 'hair', label: 'Волосы', icon: 'pi pi-plus', data: { type: HairNode } },
+      
     ]
   },
   equipment: {
@@ -305,7 +311,7 @@ const allNodeGroups = {
 
 const nodes = computed(() => {
   if (props.templateMode === 'default' || props.templateMode === 'person') {
-    return [allNodeGroups.advanced_char];
+    return [allNodeGroups.advanced_char,allNodeGroups.other];
   }
   if (props.templateMode === 'selfie') {
     return [
@@ -319,7 +325,8 @@ const nodes = computed(() => {
     allNodeGroups.composition,
     allNodeGroups.simple_char,
     allNodeGroups.advanced_char,
-    allNodeGroups.equipment
+    allNodeGroups.equipment,
+    allNodeGroups.other
   ];
 });
 
@@ -354,11 +361,24 @@ const exportedJson = computed(() => {
   }
 });
 
+
+
 watch(() => props.templateId, (newId) => {
   if (newId !== undefined) {
     loadProjectFromMock();
   }
 });
+
+watch(()=> exportedJson.value, (newPromt) =>{
+  aistore.updatePromt(newPromt) 
+}
+);
+
+watch(()=> props.isOpen, () => {
+ if( props.isOpen){
+   aistore.updatePromt(exportedJson.value)
+ }
+})
 
 watch(() => props.templateMode, (newMode) => {
   currentMode.value = newMode;
@@ -368,7 +388,11 @@ onMounted(() => {
   currentMode.value = props.templateMode;
   setInterval(() => tick.value++, 250);
   loadProjectFromMock();
+  aistore.updatePromt(exportedJson.value)
+  
 });
+
+
 </script>
 
 <style>

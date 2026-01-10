@@ -4,28 +4,34 @@ export const useAiApiStore = defineStore("aiApi", {
     state: () => ({
 
         url_endpoint: "https://api.gen-api.ru/api/v1/networks/gpt-image-1",
-        task_endpoint: "https://api.gen-api.ru/api/v1/request/get", // Для проверки статуса
+        task_endpoint: "https://api.gen-api.ru/api/v1/request/get",
         task_id: null,
         status: null,
         result: null,
         loading: false,
         error: null,
         poll_interval: null,
+        currentPromt: null
 
     }),
     getters: {
         gen_token: () => localStorage.getItem('ai_api_token') || null,
+        
     },
     actions: {
 
-        async generateImage(prompt, options = {
+        updatePromt(promt) {
+            this.currentPromt = promt
+            console.log('Сменился')
+        },
 
+        async generateImage(prompt, options = {
         }) {
             this.reset() // Очищаем предыдущее состояние
-
+            const genPromt = this.currentPromt
             try {
 
-                this.task_id = await this.createTask(prompt, options)
+                this.task_id = await this.createTask(genPromt, options)
                 this.startPolling()
 
             } catch (err) {

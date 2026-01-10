@@ -47,7 +47,7 @@
                         <!-- Создаем панель ДИНАМИЧЕСКИ для каждого проекта -->
                         <TabPanel v-for="project in openProjects" :key="project.uniqueId" :value="project.uniqueId">
                             <!-- Передаем параметры в компонент -->
-                            <NodesView :templateId="project.originalId" :templateMode="project.type" />
+                            <NodesView :isOpen="project.originalId === activeTabValue " :templateId="project.originalId" :templateMode="project.type" />
                         </TabPanel>
                     </TabPanels>
                 </Tabs>
@@ -65,7 +65,7 @@ import NodesView from '../NodesView.vue'; // Проверь путь
 import TemplateCardMini from './TemplateCardMini.vue'; // Проверь путь
 import ProjCard from './ProjCard.vue'; // Проверь путь
 import AuthPage from '../AuthPage.vue'; // Проверь путь
-
+import { watch } from 'vue';
 import Tabs from 'primevue/tabs';
 import TabList from 'primevue/tablist';
 import Tab from 'primevue/tab';
@@ -76,10 +76,12 @@ const userStore = useUserStore();
 const activeTabValue = ref('tab-home');
 const openProjects = ref([]);
 
-
+watch(() => activeTabValue.value, (newValue) => {
+    console.log(newValue)
+})
 const openTemplate = (id, type) => {
 
-    const uniqueTabId = `proj_${id}`;
+    const uniqueTabId = id;
 
 
     const existing = openProjects.value.find(p => p.uniqueId === uniqueTabId);

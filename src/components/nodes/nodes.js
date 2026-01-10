@@ -9,6 +9,8 @@ import {
 } from "baklavajs";
 import { markRaw } from "vue";
 import ImageInput from "./custom_nodes/ImageInput.vue";
+import CustomActionBtn from "./custom_nodes/CustomActionBtn.vue";
+import Button from "primevue/button";
 import {
   setType,
   setTypeForMultipleConnections,
@@ -253,27 +255,23 @@ export const HairNode = defineNode({
 });
 
 export const ResultNode = defineNode({
-    type: "ResultNode",
-    title: "Результат (Генерация)",
-    width: 1350,
+  type: "ResultNode",
+  title: "Результат (Генерация)",
+  width: 1350,
+  inputs: {
+    image: () => new NodeInterface("Изображение", null)
+      .setPort(false)
+      .setComponent(markRaw(ImageInput)),
+    
+    aiModel: () => new SelectInterface("AI Model", "gpt-image(lowQ)", [
+     "gpt-image(lowQ)"
+    ]).setPort(false),
+    popa: () => new NodeInterface("My Interface", 10).setComponent(markRaw(CustomActionBtn)),
 
-    inputs: {
-        // 1. Кастомная картинка (тут setComponent нужен, т.к. ImageInput - наш)
-        image: () => new NodeInterface("Изображение", null)
-            .setPort(false)
-            .setComponent(markRaw(ImageInput)),
-        aiModel: () => new SelectInterface("AI Model", "Midjourney", [
-                "Midjourney", 
-                "Stable Diffusion", 
-                "DALL-E 3", 
-                "Flux", 
-                "Nano Banano",
-                "Другое"
-            ]).setPort(false),
+    // generate: () => new NodeInterface("Генерация", null)
+    //   .setPort(false)
+    //   .setComponent(markRaw(CustomActionBtn)),
+  },
+  
 
-
-        description: () => new TextInputInterface("Описание", "")
-            .setPort(false)
-    },
-    outputs: {}
 });
