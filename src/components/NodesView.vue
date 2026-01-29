@@ -134,7 +134,7 @@ import { styleTypes, characterType, environmentType, lightType, skinType, noseTy
 import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CameraNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, ResultNode, StyleNode } from "../components/nodes/nodes";
 import { exportSceneTemplateFromBaklavaState } from "../utils/exportScene";
 import { exportPersonTemplateFromBaklavaState } from "../utils/exportPerson";
-import { exportUniversalFromBaklavaState } from "../utils/exportUniversal";
+
 import { PROJECTS_MOCK } from "../data/ProjMocks";
 import {Dialog} from "primevue";
 import InputText from 'primevue/inputtext';

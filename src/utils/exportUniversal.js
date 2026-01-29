@@ -44,49 +44,110 @@ function getUpstreamNodes(state, startNodeIds) {
 }
 
 export function exportUniversalFromBaklavaState(state) {
-  const masterTypes = new Set(["CompositionNode", "CharacterFullNode", "CharacterNode"]);
-
   const resultNodes = state.nodes.filter(n => n.type === "ResultNode");
-
-  if (resultNodes.length === 0) {
-    return { error: "Нет ResultNode" };
-  }
+  if (!resultNodes.length) return { error: "Нет ResultNode" };
 
   const results = [];
 
-  for (const [idx, resultNode] of resultNodes.entries()) {
-    // Находим все мастер-ноды в графе
-    const masterNodes = state.nodes.filter(n => masterTypes.has(n.type));
+  for (const res of resultNodes) {
+    const entry = {
+      order: results.length + 1,
+      result_id: res.id,
+      model: res.inputs?.aiModel?.value ?? "unknown",
+      scene: null
+    };
 
-    if (masterNodes.length === 0) {
-      results.push({
-        order: idx + 1,
-        result_id: resultNode.id,
-        result: serializeNodeInputs(resultNode),
-        nodes: { warning: "Нет Composition/Character нод" },
-      });
+    // Находим все CompositionNode (обычно 0 или 1)
+    const compNodes = state.nodes.filter(n => n.type === "CompositionNode");
+    if (!compNodes.length) {
+      results.push(entry);
       continue;
     }
 
-    const masterIds = masterNodes.map(n => n.id);
-    const connectedNodes = getUpstreamNodes(state, masterIds);
+    // Берём первую (или можно цикл, если их несколько)
+    const comp = compNodes[0];
+    const scene = {
+      description: comp.inputs?.description?.value || "",
+      use_photo_reference: comp.inputs?.use_photo_reference?.value ?? false,
+      camera: null,
+      lighting: null,
+      environment: null,
+      style: null,
+      characters: []
+    };
 
-    // Группируем
-    const nodeGroups = {};
-    for (const node of connectedNodes) {
-      if (node.type === "ResultNode") continue;
-      if (!nodeGroups[node.type]) nodeGroups[node.type] = [];
-      nodeGroups[node.type].push({
-        id: node.id,
-        ...serializeNodeInputs(node)
-      });
+    // ─── Собираем подключённые ноды ───────────────────────────────
+    const fillInput = (inputName, targetField) => {
+      const intf = comp.inputs?.[inputName];
+      if (!intf?.id) return;
+
+      const conns = state.connections.filter(c => c.to === intf.id);
+      if (!conns.length) return;
+
+      const nodes = conns.map(c => {
+        const src = state.nodes.find(n => 
+          Object.values(n.outputs||{}).some(o => o?.id === c.from)
+        );
+        return src ? { id: src.id, type: src.type, value: serializeInputs(src) } : null;
+      }).filter(Boolean);
+
+      if (nodes.length === 0) return;
+
+      // Для одиночных входов берём первый, для множественных — массив
+      scene[targetField] = nodes.length === 1 ? nodes[0].value : nodes.map(n => n.value);
+    };
+
+    fillInput("camera",     "camera");
+    fillInput("light",      "lighting");
+    fillInput("environment","environment");
+    fillInput("style",      "style");
+
+    // Персонажи (могут быть множественные)
+    const charConns = state.connections.filter(c => 
+      comp.inputs?.character?.id && c.to === comp.inputs.character.id
+    );
+
+    for (const conn of charConns) {
+      const charNode = state.nodes.find(n => 
+        Object.values(n.outputs||{}).some(o => o?.id === conn.from)
+      );
+      if (!charNode) continue;
+
+      const charData = serializeInputs(charNode);
+
+      // Добавляем под-ноды лица (skin, nose, eyes и т.д.)
+      charData.face_details = {};
+      for (const [key, intf] of Object.entries(charNode.inputs || {})) {
+        if (!["gender","age","height","weight","description"].includes(key)) {
+          const subConns = state.connections.filter(c => c.to === intf?.id);
+          if (subConns.length) {
+            const subNode = state.nodes.find(n => 
+              Object.values(n.outputs||{}).some(o => o?.id === subConns[0].from)
+            );
+            if (subNode) {
+              charData.face_details[key] = serializeInputs(subNode);
+            }
+          }
+        }
+      }
+
+      scene.characters.push(charData);
     }
 
-    results.push({
-      order: idx + 1,
-      generationData: nodeGroups
-    });
+    entry.scene = scene;
+    results.push(entry);
   }
 
   return { results };
+}
+
+function serializeInputs(node) {
+  const o = {};
+  if (!node?.inputs) return o;
+  for (const [k, v] of Object.entries(node.inputs)) {
+    if (v?.value !== undefined && v.value !== "" && v.value !== null) {
+      o[k] = v.value;
+    }
+  }
+  return o;
 }

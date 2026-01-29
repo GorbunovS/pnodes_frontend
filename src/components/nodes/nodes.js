@@ -208,7 +208,7 @@ export const CharacterFullNode = defineNode({
       ),
   },
     outputs:{
-     composition: () => new NodeInterface("Результат", null).use(setType, compositionTypes),
+     composition: () => new NodeInterface("Персонаж", null).use(setType, characterType),
   }
 });
 
