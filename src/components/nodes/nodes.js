@@ -6,6 +6,8 @@ import {
   NumberInterface,
   SelectInterface,
   EditorComponent,
+  CheckboxInterface
+  
 } from "baklavajs";
 import { markRaw } from "vue";
 import ImageInput from "./custom_nodes/ImageInput.vue";
@@ -26,9 +28,12 @@ import {
   noseType,
   hairType,
   eyeType,
+  styleTypes,
+  compositionTypes
 
 } from "./types";
-import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets, envPresets,cameraPresets } from "./presets";
+import {stylePresets, mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets, envPresets,cameraPresets } from "./presets";
+
 
 
 
@@ -64,6 +69,10 @@ export const CompositionNode = defineNode({
       new NodeInterface("Персонажи", [])
         .use(allowMultipleConnections)
         .use(setTypeForMultipleConnections, characterType),
+            style: () =>
+      new NodeInterface("Стиль", [])
+        .use(allowMultipleConnections)
+        .use(setTypeForMultipleConnections, styleTypes),
 
     use_photo_reference: () =>
       new SelectInterface("Фото референс", false, [
@@ -71,9 +80,13 @@ export const CompositionNode = defineNode({
         { text: "Использовать фото‑референс", value: true },
       ]).setPort(false),
 
+
     description: () =>
       new TextInputInterface("Описание", "Базовая сцена").setPort(false),
   },
+  outputs:{
+     composition: () => new NodeInterface("Результат", null).use(setType, compositionTypes),
+  }
 });
 
 export const LightingNode = defineNode({
@@ -123,6 +136,25 @@ export const CameraNode = defineNode({
   }
 }
 )
+
+export const StyleNode = defineNode({
+  type: "Стилистика",
+  title: "Стилистические пресеты",
+  inputs: {
+    anime: () => makeSelect("Аниме", "", stylePresets.anime),
+    pixel: () => makeSelect("Пиксель-арт", "", stylePresets.pixel),
+    illustration: () => makeSelect("Иллюстрация", "", stylePresets.illustration),
+    conceptArt: () => makeSelect("Концепт-арт", "", stylePresets.conceptArt),  
+    stylized: () => makeSelect("Стилизованный", "", stylePresets.stylized),  
+    realism: () => makeSelect("Реализм", "", stylePresets.realism),
+    cinematic: () => makeSelect("Кинематографичный", "", stylePresets.cinematic),
+    custom_style: () =>
+      new TextInputInterface("Свой стиль (дописать)", "").setPort(false),
+  },
+  outputs: {
+    style: () => new NodeInterface("Стиль", null).use(setType, styleTypes),
+  },
+});
 
 export const CharacterNode = defineNode({
   type: "CharacterNode",
@@ -175,6 +207,9 @@ export const CharacterFullNode = defineNode({
         false
       ),
   },
+    outputs:{
+     composition: () => new NodeInterface("Результат", null).use(setType, compositionTypes),
+  }
 });
 
 export const SkinNode = defineNode({

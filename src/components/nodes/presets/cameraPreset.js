@@ -1,7 +1,13 @@
+import { label } from "@primeuix/themes/aura/metergroup";
+
 export const cameraPresets = {
   camera: [
 
-    // ───────────── PORTRAIT ─────────────
+    {
+      id:"",
+      label:"Нет"
+
+    },
 
     {
       id: "85mm lens, f1.8, shallow depth of field, creamy bokeh, natural facial proportions, professional portrait photography",
@@ -35,7 +41,7 @@ export const cameraPresets = {
       label: "Кино-теле 135mm"
     },
 
-    // ───────────── WIDE / ENVIRONMENT ─────────────
+
 
     {
       id: "24mm wide angle lens, environmental portrait, deep perspective, subject in context",

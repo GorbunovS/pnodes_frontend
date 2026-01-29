@@ -158,6 +158,13 @@ const projectTemplates = [
         available: true
     },
     {
+         id: 5,
+        title: 'free space',
+        type: 'default',
+        description: 'Полная свобода действий (открыты все ноды)',
+        available: true
+    },
+    {
         id: 3,
         title: 'fashion',
         type: 'fashion',

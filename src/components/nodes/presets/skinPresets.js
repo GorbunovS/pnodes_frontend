@@ -1,5 +1,10 @@
 export const skinPresets = {
   type: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     {
       id: "high_density_unretouched_matte",
       label: "Высокоплотная, без ретуши, матовая",
@@ -15,6 +20,11 @@ export const skinPresets = {
   ],
 
   texture: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     {
       id: "subtle_texture",
       label: "Лёгкая текстура, мелкие поры, слабые несовершенства",
@@ -30,6 +40,11 @@ export const skinPresets = {
   ],
 
   finish: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     {
       id: "matte_dry",
       label: "Матовая и сухая (без блеска, без жирности, без отражений)",
@@ -45,6 +60,11 @@ export const skinPresets = {
   ],
 
   imperfections: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     {
       id: "freckles_redness",
       label: "Веснушки + лёгкая краснота + неровный тон",

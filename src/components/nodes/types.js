@@ -9,3 +9,5 @@ export const mouthType = new NodeInterfaceType("mouth");
 export const eyeType = new NodeInterfaceType("eye");
 export const hairType = new NodeInterfaceType("hair");
 export const cameraType = new NodeInterfaceType("camera");
+export const styleTypes = new NodeInterfaceType("style");
+export const compositionTypes = new NodeInterfaceType("composition")

@@ -1,5 +1,10 @@
 export const mouthPresets = {
   shape: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "heart_shaped", label: "Сердечком (Heart-shaped)" },
     { id: "wide_smile", label: "Широкий рот" },
     { id: "small_rosebud", label: "Маленький (Rosebud)" },
@@ -8,6 +13,11 @@ export const mouthPresets = {
     { id: "straight_defined", label: "Прямой строгий" },
   ],
   fullness: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "full_plump", label: "Пухлые / Полные" },
     { id: "medium_natural", label: "Средние / Натуральные" },
     { id: "thin_strict", label: "Тонкие / Строгие" },
@@ -15,11 +25,21 @@ export const mouthPresets = {
     { id: "full_upper_lip", label: "Акцент на верхнюю губу" },
   ],
   cupids_bow: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "defined_sharp", label: "Чёткая / Острая" },
     { id: "soft_smooth", label: "Мягкая / Сглаженная" },
     { id: "flat_minimal", label: "Плоская / Почти нет" },
   ],
   corners: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "neutral_straight", label: "Прямые (Нейтрально)" },
     { id: "upturned_happy", label: "Приподнятые (Лёгкая улыбка)" },
     { id: "downturned_serious", label: "Опущенные (Серьёзно)" },

@@ -3,6 +3,11 @@
 
 export const nosePresets = {
   type: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "straight_grecian", label: "Прямой (Греческий)" },
     { id: "button_upturned", label: "Курносый (Кнопка)" },
     { id: "aquiline_hooked", label: "Орлиный (с горбинкой)" },
@@ -13,6 +18,11 @@ export const nosePresets = {
     { id: "hawk_sharp", label: "Ястребиный (узкий, острый)" },
   ],
   bridge: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "high_bridge", label: "Высокая переносица" },
     { id: "straight_bridge", label: "Прямая спинка" },
     { id: "slight_bump", label: "С легкой горбинкой" },
@@ -20,6 +30,11 @@ export const nosePresets = {
     { id: "wide_flat", label: "Широкая/Плоская" },
   ],
   tip: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "pointed_sharp", label: "Заостренный" },
     { id: "rounded_soft", label: "Округлый/Мягкий" },
     { id: "bulbous_defined", label: "Шарообразный" },

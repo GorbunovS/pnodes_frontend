@@ -1,5 +1,10 @@
 export const hairPresets = {
   style: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "long_loose", label: "Длинные распущенные" },
     { id: "bob_cut", label: "Каре / Боб" },
     { id: "pixie_cut", label: "Пикси / Короткая стрижка" },
@@ -10,6 +15,11 @@ export const hairPresets = {
     { id: "bangs_fringe", label: "С чёлкой" },
   ],
   texture: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "straight_silky", label: "Прямые и шелковистые" },
     { id: "wavy_beach", label: "Волнистые (пляжная волна)" },
     { id: "curly_defined", label: "Кудрявые (четкий завиток)" },
@@ -17,6 +27,11 @@ export const hairPresets = {
     { id: "frizzy_natural", label: "Пушистые / Натуральные" },
   ],
   color: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "platinum_blonde", label: "Платиновый блонд" },
     { id: "honey_blonde", label: "Медовый блонд" },
     { id: "dark_brunette", label: "Тёмный брюнет" },
@@ -28,6 +43,11 @@ export const hairPresets = {
     { id: "salt_and_pepper", label: "С проседью" },
   ],
   condition: [
+        {
+      id:"",
+      label:"Нет"
+
+    },
     { id: "messy_bedhead", label: "Растрёпанные (Bedhead)" },
     { id: "sleek_polished", label: "Гладкие / Уложенные" },
     { id: "wet_look", label: "Влажный эффект" },

@@ -130,10 +130,11 @@ import { copyToClipboard } from "../utils/helpers";
 import { useAiApiStore } from "../store/aistore";
 
 import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets } from "./nodes/presets";
-import { characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType, cameraType } from "./nodes/types";
-import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CameraNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, ResultNode } from "../components/nodes/nodes";
+import { styleTypes, characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType, cameraType } from "./nodes/types";
+import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CameraNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, ResultNode, StyleNode } from "../components/nodes/nodes";
 import { exportSceneTemplateFromBaklavaState } from "../utils/exportScene";
 import { exportPersonTemplateFromBaklavaState } from "../utils/exportPerson";
+import { exportUniversalFromBaklavaState } from "../utils/exportUniversal";
 import { PROJECTS_MOCK } from "../data/ProjMocks";
 import {Dialog} from "primevue";
 import InputText from 'primevue/inputtext';
@@ -160,7 +161,7 @@ const editor = baklava.editor;
 const imageResult = computed(() => aistore.result);
 
 const nodeInterfaceTypes = new BaklavaInterfaceTypes(editor, { viewPlugin: baklava });
-nodeInterfaceTypes.addTypes(characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType,cameraType);
+nodeInterfaceTypes.addTypes(styleTypes, characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType,cameraType);
 
 editor.registerNodeType(CompositionNode);
 editor.registerNodeType(CharacterNode);
@@ -174,6 +175,7 @@ editor.registerNodeType(EyesNode);
 editor.registerNodeType(HairNode);
 editor.registerNodeType(ResultNode);
 editor.registerNodeType(CameraNode);
+editor.registerNodeType(StyleNode);
 
 const props = defineProps({
   templateId: { type: Number, default: 0 },
@@ -231,10 +233,10 @@ onMounted(() => {
 const currentMode = ref(props.templateMode);
 const tick = ref(0);
 const expandedKeys = ref({ 
-  'scene': true, 
-  'char_simple_group': true, 
-  'char_advanced_group': true, 
-  'equip': true 
+  'scene': false, 
+  'char_simple_group': false, 
+  'char_advanced_group': false, 
+  'equip': false 
 });
 
 const loadProjectFromMock = () => {
@@ -273,6 +275,13 @@ const allNodeGroups = {
       {key:'camera', label: 'Камера', icon: 'pi pi-plus', data:{type:CameraNode}}
     ]
   },
+    other: {
+    key: 'other',
+    label: 'Результат',
+    children: [
+      { key: 'result', label: 'Результат', icon: 'pi pi-plus', data: { type: ResultNode } }
+    ]
+  },
   simple_char: {
     key: 'char_simple_group',
     label: 'Простой персонаж',
@@ -303,20 +312,29 @@ const allNodeGroups = {
       { key: 'light', label: 'Источник света', icon: 'pi pi-plus', data: { type: LightingNode } }
     ]
   },
-  other: {
-    key: 'other',
-    label: 'Другое',
-    icon: 'pi pi-sun',
-    children: [
-      { key: 'result', label: 'Результат', icon: 'pi pi-plus', data: { type: ResultNode } }
+  styleTypes: {
+    key:'style',
+    label: 'Стили',
+    icon:'pi pi-pen',
+    children:[
+      { key: 'style', label: 'Стили', icon: 'pi pi-plus', data: { type: StyleNode } }
     ]
-  }
+  },
+
 };
 
 const nodes = computed(() => {
-  if (props.templateMode === 'default' || props.templateMode === 'person') {
+  if ( props.templateMode === 'person') {
     return [allNodeGroups.advanced_char,allNodeGroups.other];
   }
+ if (props.templateMode === 'default') {
+  [
+      allNodeGroups.composition,
+      allNodeGroups.other,
+
+  ]
+ }
+
   if (props.templateMode === 'selfie') {
     return [
       allNodeGroups.composition,
@@ -327,10 +345,12 @@ const nodes = computed(() => {
   }
   return [
     allNodeGroups.composition,
+    allNodeGroups.other,
     allNodeGroups.simple_char,
     allNodeGroups.advanced_char,
     allNodeGroups.equipment,
-    allNodeGroups.other
+    allNodeGroups.styleTypes,
+    
   ];
 });
 
@@ -351,14 +371,7 @@ const exportedJson = computed(() => {
   void tick.value;
   try {
     const state = graph.value.save();
-    const hasFullChar = state.nodes.some(n => n.type === "CharacterFullNode");
-    if (hasFullChar) {
-      const out = exportPersonTemplateFromBaklavaState(state, {
-        skinPresets, nosePresets, mouthPresets, eyePresets, hairPresets
-      });
-      return JSON.stringify(out, null, 2);
-    }
-    const out = exportSceneTemplateFromBaklavaState(state, { lightingPresets });
+    const out = exportUniversalFromBaklavaState(state);
     return JSON.stringify(out, null, 2);
   } catch (e) {
     return JSON.stringify({ error: "Export failed", details: e.message }, null, 2);
