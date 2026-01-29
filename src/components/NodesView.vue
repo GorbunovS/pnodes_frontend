@@ -132,8 +132,7 @@ import { useAiApiStore } from "../store/aistore";
 import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets } from "./nodes/presets";
 import { styleTypes, characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType, cameraType } from "./nodes/types";
 import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CameraNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, ResultNode, StyleNode } from "../components/nodes/nodes";
-import { exportSceneTemplateFromBaklavaState } from "../utils/exportScene";
-import { exportPersonTemplateFromBaklavaState } from "../utils/exportPerson";
+import { exportUniversalFromBaklavaState } from "../utils/exportUniversal";
 
 import { PROJECTS_MOCK } from "../data/ProjMocks";
 import {Dialog} from "primevue";
