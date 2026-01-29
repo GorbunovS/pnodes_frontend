@@ -94,17 +94,16 @@
 
     <Panel 
       header="Промт-превью"
-      class="absolute flex flex-col right-2.5 bottom-2.5 z-[100] w-1/3 max-h-1/2 overflow-auto p-3 rounded-xl border border-zinc-800 bg-black/80 text-white text-xs backdrop-blur-md shadow-2xl"
+      class="absolute flex flex-col right-2.5 bottom-2.5 z-[100] w-1/3 max-h-1/2 overflow-x-hidden p-3 rounded-xl border border-zinc-800 bg-black/80 text-white text-xs backdrop-blur-md shadow-2xl"
       toggleable
     >
-      <pre class="h-80 overflow-auto font-mono text-xs">{{ exportedJson }}</pre>
+      <pre class="p-2 h-60 overflow-x-hidden font-mono text-xs">{{ exportedJson }}</pre>
       <template #footer>
         <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
           <div class="flex items-center gap-2">
             <Button raised label="Копировать" @click="copyJson" severity="primary" icon="pi pi-copy" rounded text size="small"></Button>
             <Button @click="saveProject" raised icon="pi pi-bookmark" severity="secondary" rounded text size="small" class="!text-zinc-400 hover:!text-white"></Button>
           </div>
-          <Button @click="generate" label="Сгенерировать(beta)"></Button>
           <span class="text-zinc-600 font-mono">{{ exportedJson.length }} chars</span>
         </div>
       </template>
@@ -131,13 +130,16 @@ import { copyToClipboard } from "../utils/helpers";
 import { useAiApiStore } from "../store/aistore";
 
 import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets } from "./nodes/presets";
-import { characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType } from "./nodes/types";
-import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, ResultNode } from "../components/nodes/nodes";
+import { characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType, cameraType } from "./nodes/types";
+import { CompositionNode, EnvironmentNode, CharacterNode, LightingNode, CameraNode, CharacterFullNode, SkinNode, NoseNode, MouthNode, EyesNode, HairNode, ResultNode } from "../components/nodes/nodes";
 import { exportSceneTemplateFromBaklavaState } from "../utils/exportScene";
 import { exportPersonTemplateFromBaklavaState } from "../utils/exportPerson";
 import { PROJECTS_MOCK } from "../data/ProjMocks";
 import {Dialog} from "primevue";
 import InputText from 'primevue/inputtext';
+import { label } from "@primeuix/themes/aura/metergroup";
+import { icon } from "@primeuix/themes/aura/avatar";
+import { date } from "@primeuix/themes/aura/datepicker";
 
 
 
@@ -158,7 +160,7 @@ const editor = baklava.editor;
 const imageResult = computed(() => aistore.result);
 
 const nodeInterfaceTypes = new BaklavaInterfaceTypes(editor, { viewPlugin: baklava });
-nodeInterfaceTypes.addTypes(characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType);
+nodeInterfaceTypes.addTypes(characterType, environmentType, lightType, skinType, noseType, mouthType, eyeType, hairType,cameraType);
 
 editor.registerNodeType(CompositionNode);
 editor.registerNodeType(CharacterNode);
@@ -171,6 +173,7 @@ editor.registerNodeType(MouthNode);
 editor.registerNodeType(EyesNode);
 editor.registerNodeType(HairNode);
 editor.registerNodeType(ResultNode);
+editor.registerNodeType(CameraNode);
 
 const props = defineProps({
   templateId: { type: Number, default: 0 },
@@ -266,7 +269,8 @@ const allNodeGroups = {
     icon: 'pi pi-globe',
     children: [
       { key: 'comp', label: 'Композиция', icon: 'pi pi-image', data: { type: CompositionNode } },
-      { key: 'env', label: 'Окружение', icon: 'pi pi-plus', data: { type: EnvironmentNode } }
+      { key: 'env', label: 'Окружение', icon: 'pi pi-plus', data: { type: EnvironmentNode } },
+      {key:'camera', label: 'Камера', icon: 'pi pi-plus', data:{type:CameraNode}}
     ]
   },
   simple_char: {

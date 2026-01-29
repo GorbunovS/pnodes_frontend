@@ -26,8 +26,9 @@ import {
   noseType,
   hairType,
   eyeType,
+
 } from "./types";
-import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets, envPresets } from "./presets";
+import { mouthPresets, eyePresets, hairPresets, lightingPresets, nosePresets, skinPresets, envPresets,cameraPresets } from "./presets";
 
 
 
@@ -110,6 +111,19 @@ export const EnvironmentNode = defineNode({
     },
   
 });
+
+export const CameraNode = defineNode({
+  type:"CameraNode",
+  title:"Настройки камеры",
+  inputs:{
+    camera:()=> makeSelect("Камера","85mm lens, f1.8, shallow depth of field, creamy bokeh, natural facial proportions, professional portrait photography",cameraPresets.camera).use(setType, cameraType)
+  },
+  outputs: {
+    camera: () => new NodeInterface("Камера", null).use(setType, cameraType),
+  }
+}
+)
+
 export const CharacterNode = defineNode({
   type: "CharacterNode",
   title: "Персонаж",

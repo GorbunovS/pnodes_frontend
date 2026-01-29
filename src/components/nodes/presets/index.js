@@ -5,6 +5,7 @@ import { skinPresets } from "./skinPresets";
 import { lightingPresets } from "./lightingPresets";
 import { hairPresets } from "./hairPresets";
 import { envPresets } from "./envPresets";
+import { cameraPresets } from "./cameraPreset";
 
 export {
     eyePresets,
@@ -13,6 +14,7 @@ export {
     skinPresets,
     lightingPresets,
     hairPresets,
-    envPresets
+    envPresets,
+    cameraPresets
 
 };

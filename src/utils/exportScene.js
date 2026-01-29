@@ -34,6 +34,7 @@ export function exportSceneTemplateFromBaklavaState(state, { lightingPresets } =
   const characterNodes = getConnectedNodesToInput(state, composition, "character");
   const envNodes = getConnectedNodesToInput(state, composition, "environment");
   const lightNodes = getConnectedNodesToInput(state, composition, "light");
+  const cameraNodes = getConnectedNodesToInput(state, composition, "camera");
 
   const subject_context = characterNodes.map(n => ({
     identity_source: "provided_reference_image",
@@ -64,6 +65,15 @@ const environment = envNodes.length
       description: "",
     }].map(env => env.map(v => v || "default")); // не надо
 
+const camera = cameraNodes.length
+  ? cameraNodes.map(n => ({
+      prompt: n?.outputs?.camera?.value 
+        ?? n?.inputs?.camera?.value 
+        ?? "50mm lens, f1.8"
+    }))
+  : [{
+      prompt: "50mm lens, f1.8, natural perspective"
+    }];
 
   const lighting = lightNodes.length
     ? lightNodes.map(n => {
@@ -96,15 +106,17 @@ const environment = envNodes.length
       scene_context: { description: sceneDescription },
       environment,
       lighting,
+      camera,
       subject_context,
     },
     generation_prompt_assembler: [
-      `close-up selfie portrait of ${subjectsLine}`,
+      // `close-up selfie portrait of ${subjectsLine}`,
       `scene: ${sceneDescription}`,
       "in {ЛОКАЦИЯ}",
       `lighting: ${lighting[0]?.resolved?.type ?? "{СВЕТ_ТИП}"}, ${lighting[0]?.resolved?.direction ?? "{СВЕТ_НАПРАВЛЕНИЕ}"}`,
       "28mm lens, f/2.2",
       "realistic skin texture, visible pores, candid moment",
     ],
+    
   };
 }
