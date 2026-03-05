@@ -26,10 +26,24 @@ onMounted(() => {
 </script>
 
 <template>
-<HeaderComp />
-<ProgressBar v-if="proStore.loading || aistore.loading" mode="indeterminate" style="height: 6px"></ProgressBar>
-<RouterView />
+  <div class="flex flex-col min-h-screen">
+    <!-- Фиксированный хедер -->
+    <header class="fixed top-0 left-0 right-0 z-50">
+      <HeaderComp />
+      <ProgressBar 
+        v-if="proStore.loading || aistore.loading" 
+        mode="indeterminate" 
+        class="h-1.5 w-full"
+      />
+    </header>
+
+    <!-- Основной контент -->
+    <main class="flex-1 pt-16">
+      <RouterView />
+    </main>
+  </div>
 </template>
+
 
 <style scoped>
 

@@ -1,5 +1,5 @@
 <template>
-    <div v-if="userStore.user" class="min-h-[95vh] text-white flex flex-col items-center justify-center gap-50">
+    <div v-if="userStore.user" class="min-h-[95vh] overflow-y-hidden text-white flex flex-col items-center justify-center gap-50">
         <div class="main-block w-full min-h-[95vh] border-l border-r border-slate-700">
             <div class="tabs">
                 <!-- В v4 используется v-model:value, а не activeIndex -->
@@ -32,8 +32,7 @@
                         </TabPanel>
 
                         <TabPanel value="tab-public">
-                            <div v-if="false" class="flex flex-wrap gap-4"></div>
-                            <div v-else>Пока нет опубликованных шаблонов</div>
+                            <BoardViewer  />
                         </TabPanel>
 
                         <TabPanel value="tab-create">
@@ -71,6 +70,9 @@ import TabList from 'primevue/tablist';
 import Tab from 'primevue/tab';
 import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
+
+import BoardViewer from '../../customCanvas/BoardViewer.vue';
+
 
 const userStore = useUserStore();
 const activeTabValue = ref('tab-home');

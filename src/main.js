@@ -9,6 +9,9 @@ import ToastService from "primevue/toastservice";
 import { router } from "./router";
 import { createPinia } from 'pinia'
 import DialogService from 'primevue/dialogservice';
+import panZoom from 'vue-panzoom'
+import { GesturePlugin } from '@vueuse/gesture'
+
 
 
 const pinia = createPinia()
@@ -16,6 +19,8 @@ const app = createApp(App);
 app.component("Button", Button);
 app.use(pinia)
 app.use(router)
+app.use(panZoom)
+app.use(GesturePlugin)
 app.use(DialogService);
 
 
