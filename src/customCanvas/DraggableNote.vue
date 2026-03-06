@@ -1,75 +1,70 @@
 <template>
-  <div class="bg-zinc-800 relative" style="width: 5000px; height: 4000px;">
-    <!-- сетка -->
-    <div
-      class="absolute inset-0 pointer-events-none opacity-20"
-      style="
-        background-image:
-          linear-gradient(to right, #555 1px, transparent 1px),
-          linear-gradient(to bottom, #555 1px, transparent 1px);
-        background-size: 80px 80px;
-      "
-    />
+  <div 
+    class="relative w-[240px] min-h-[120px] bg-zinc-900/60 border border-blue-400/40 backdrop-blur-md rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+    :class="{ 'ring-2 ring-yellow-400': isSource }"
+    :data-id="nodeId"
+  >
+    <!-- Заголовок -->
+    <div class="px-3 py-2 border-b border-blue-400/20 text-blue-200 text-sm font-medium flex justify-between items-center">
+      <span>{{ title }}</span>
+      <span v-if="data !== undefined" class="text-xs text-blue-400 font-mono">{{ typeof data === 'object' ? data.value : data }}</span>
+    </div>
+    
+    <!-- Контент -->
+    <div class="p-3 min-h-[60px]">
+      <slot></slot>
+    </div>
 
-    <!-- квадратики -->
-    <div
-      v-for="item in items"
-      :key="item.id"
-      class="absolute w-32 h-32 bg-red-600/80 text-white flex items-center justify-center rounded shadow-lg cursor-grab active:cursor-grabbing select-none touch-none"
-      :style="{ transform: `translate(${item.x}px, ${item.y}px)` }"
-      @pointerdown.self.prevent="startDrag($event, item)"
+    <!-- Входы (слева) -->
+    <div 
+      v-for="(input, idx) in inputs" 
+      :key="'in-'+idx"
+      class="port-input absolute left-0 w-5 h-5 bg-green-500 rounded-full cursor-pointer hover:scale-125 transition shadow-lg border-2 border-zinc-900"
+      :class="{ 'ring-2 ring-white': isSource }"
+      :style="{ top: `${35 + idx * 28}px` }"
+      :data-port="'input'"
+      :data-idx="idx"
+      :data-type="input.type"
+      @click.stop="$emit('portClick', $event, 'input', idx, input.type, nodeId)"
     >
-      {{ item.id }}
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
+    </div>
+
+    <!-- Выходы (справа) -->
+    <div 
+      v-for="(output, idx) in outputs" 
+      :key="'out-'+idx"
+      class="port-output absolute right-0 w-5 h-5 bg-blue-500 rounded-full cursor-pointer hover:scale-125 transition shadow-lg border-2 border-zinc-900"
+      :class="{ 'ring-2 ring-yellow-400 animate-pulse': isSource }"
+      :style="{ top: `${35 + idx * 28}px` }"
+      :data-port="'output'"
+      :data-idx="idx"
+      :data-type="output.type"
+      @click.stop="$emit('portClick', $event, 'output', idx, output.type, nodeId)"
+    >
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+defineProps({
+  nodeId: Number,
+  title: String,
+  inputs: { type: Array, default: () => [] },
+  outputs: { type: Array, default: () => [] },
+  data: [Number, String, Object],
+  isSource: { type: Boolean, default: false }
+})
 
-const items = ref([
-  { id: 'A', x:  800, y:  600 },
-  { id: 'B', x: 1600, y: 1000 },
-  { id: 'C', x:  500, y: 1800 },
-  { id: 'D', x: 2200, y: 1400 }
-])
-
-let currentItem = null
-let startX = 0
-let startY = 0
-let startMouseX = 0
-let startMouseY = 0
-
-function startDrag(e, item) {
-  if (e.button !== 0) return           // только левая кнопка
-  e.stopPropagation()                  // чтобы не мешать другим событиям
-
-  currentItem = item
-  startX = item.x
-  startY = item.y
-  startMouseX = e.clientX
-  startMouseY = e.clientY
-
-  document.addEventListener('pointermove', onPointerMove)
-  document.addEventListener('pointerup', onPointerUp)
-  document.addEventListener('pointercancel', onPointerUp)
-}
-
-function onPointerMove(e) {
-  if (!currentItem) return
-
-  const dx = e.clientX - startMouseX
-  const dy = e.clientY - startMouseY
-
-  currentItem.x = startX + dx
-  currentItem.y = startY + dy
-}
-
-function onPointerUp() {
-  currentItem = null
-
-  document.removeEventListener('pointermove', onPointerMove)
-  document.removeEventListener('pointerup', onPointerUp)
-  document.removeEventListener('pointercancel', onPointerUp)
-}
+defineEmits(['portClick'])
 </script>
+
+<style scoped>
+.port-input, .port-output {
+  transform: translateX(-50%);
+}
+.port-output {
+  transform: translateX(50%);
+}
+</style>
