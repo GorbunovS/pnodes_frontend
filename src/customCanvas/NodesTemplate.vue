@@ -88,10 +88,9 @@
     <div 
       v-if="hasOutput"
       class="absolute -right-3 -bottom-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
-      :class="{ 'animate-pulse': isSource }"
       :style="{ 
-        backgroundColor: hasOutputConnection ? '#eab308' : nodeColor,
-        border: '2px solid #18181b'
+        backgroundColor: hasOutputConnection ? nodeColor : '#18181b',
+        border: `2px solid ${nodeColor}`
       }"
       :data-port="'output'"
       data-idx="0"
@@ -99,7 +98,12 @@
       @pointerdown.stop="onOutputPointerDown"
       @click.stop="onOutputClick"
     >
-      <div class="w-2 h-2 bg-white rounded-full -rotate-45"></div>
+      <!-- Активный: маленький ромбик внутри -->
+      <div 
+        v-if="isSource"
+        class="w-2 h-2 -rotate-45"
+        :style="{ backgroundColor: nodeColor }"
+      ></div>
     </div>
 
     <!-- Input порт (ромб в верхнем левом углу) -->
@@ -107,15 +111,15 @@
       v-if="hasInput"
       class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
       :style="{ 
-        backgroundColor: hasInputConnection ? '#eab308' : nodeColor,
-        border: '2px solid #18181b'
+        backgroundColor: hasInputConnection ? nodeColor : '#18181b',
+        border: `2px solid ${nodeColor}`
       }"
       :data-port="'input'"
       data-idx="0"
       :data-type="inputType"
       @click.stop="onInputClick"
     >
-      <div class="w-2 h-2 bg-white rounded-full -rotate-45"></div>
+      <!-- Input не имеет активного состояния, только подключен/не подключен -->
     </div>
 
     <!-- Модал всех тегов -->
@@ -212,15 +216,14 @@
       v-if="hasInput"
       class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
       :style="{ 
-        backgroundColor: hasInputConnection ? '#eab308' : nodeColor,
-        border: '2px solid #18181b'
+        backgroundColor: hasInputConnection ? nodeColor : '#18181b',
+        border: `2px solid ${nodeColor}`
       }"
       :data-port="'input'"
       data-idx="0"
       :data-type="inputType"
       @click.stop="onInputClick"
     >
-      <div class="w-2 h-2 bg-white rounded-full -rotate-45"></div>
     </div>
 
     <!-- Источники (свитчи подключённых нод) -->
@@ -292,17 +295,21 @@
     <div 
       v-if="hasOutput"
       class="absolute -right-3 -bottom-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
-      :class="{ 'animate-pulse': isSource }"
       :style="{ 
-        backgroundColor: hasOutputConnection ? '#eab308' : nodeColor,
-        border: '2px solid #18181b'
+        backgroundColor: hasOutputConnection ? nodeColor : '#18181b',
+        border: `2px solid ${nodeColor}`
       }"
       :data-port="'output'"
       data-idx="0"
       :data-type="outputType"
       @click.stop="onOutputClick"
     >
-      <div class="w-2 h-2 bg-white rounded-full -rotate-45"></div>
+      <!-- Активный: маленький ромбик внутри -->
+      <div 
+        v-if="isSource"
+        class="w-2 h-2 -rotate-45"
+        :style="{ backgroundColor: nodeColor }"
+      ></div>
     </div>
   </div>
 </template>

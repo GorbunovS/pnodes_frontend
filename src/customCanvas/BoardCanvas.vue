@@ -28,7 +28,7 @@
         :key="conn.id"
         :d="getPath(conn)"
         :stroke="getConnectionColor(conn)"
-        stroke-width="6"
+        stroke-width="4"
         fill="none"
         stroke-linecap="round"
         class="connection-line cursor-pointer"
@@ -41,7 +41,7 @@
         :key="'visible-' + conn.id"
         :d="getPath(conn)"
         :stroke="getConnectionColor(conn)"
-        stroke-width="2.5" 
+        stroke-width="1.5" 
         fill="none"
         stroke-linecap="round"
         class="drop-shadow-md"
@@ -347,14 +347,21 @@ const getPath = (conn) => {
   
   if (!fromNode || !toNode) return ''
   
-  // Output: ромб в правом нижнем углу
-  const fromX = fromNode.x + 320 + 12 // центр ромба (320 + половина 24)
-  const fromY = fromNode.y + 200 + 12 // примерно высота ноды + смещение ромба
+  // Определяем тип ноды для правильных размеров
+  const isFromComposer = fromNode.config?.isComposer
+  const isToComposer = toNode.config?.isComposer
   
-  // Input: ромб в верхнем левом углу (для композитора) или слева (для обычных)
-  const isComposer = toNode.config?.isComposer
-  const toX = toNode.x - 12 // левый край - половина ромба
-  const toY = isComposer ? toNode.y - 12 : toNode.y + 100 // сверху для композитора
+  // Размеры нод (width + запас для ромба)
+  const fromWidth = isFromComposer ? 340 : 320
+  const fromHeight = isFromComposer ? 400 : 320  // увеличил высоту чтобы попасть в ромб
+  
+  // Output: ромб (-right-3 -bottom-3) центр = (width + 12 - 12, height + 12 - 12)
+  const fromX = fromNode.x + fromWidth   // правый край ноды (ромб выступает на 12px, центр ромба = край ноды)
+  const fromY = fromNode.y + fromHeight  // нижний край ноды
+  
+  // Input: ромб (-left-3 -top-3) центр = (-12 + 12, -12 + 12) = (0, 0) относительно ноды
+  const toX = toNode.x                   // левый край ноды
+  const toY = isToComposer ? toNode.y : toNode.y + 140 // верх для композитора, середина для обычных
   
   const dx = toX - fromX
   const tension = Math.max(Math.abs(dx) * 0.5, 100)
