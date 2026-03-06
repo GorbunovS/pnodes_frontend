@@ -1,23 +1,13 @@
 <template>
-  <!-- Debug панель -->
-  <div class="fixed top-4 right-4 z-[100] w-64 max-h-[30vh] overflow-auto bg-zinc-900/90 border border-zinc-700 rounded-lg p-3 text-xs font-mono">
-    <div class="flex justify-between items-center mb-2">
-      <span class="text-zinc-400 font-bold">Debug</span>
-      <span class="text-zinc-600">{{ store.selectedCount }} selected</span>
-    </div>
-    <div class="text-zinc-500 text-[10px] mb-1">
-      Ctrl+Click: мультиселект | Drag: рамка | Ctrl+C/V: копи | Delete: удалить
-    </div>
-    <pre class="text-green-400 whitespace-pre-wrap break-all text-[10px]">{{ debugJson }}</pre>
-  </div>
-
   <div 
     class="relative" 
     style="width: 6000px; height: 4000px;"
     @pointerdown="onCanvasPointerDown"
   >
     <!-- Сетка -->
-    <div class="absolute inset-0 pointer-events-none opacity-15" style="background-image: linear-gradient(to right, #444 1px, transparent 1px), linear-gradient(to bottom, #444 1px, transparent 1px); background-size: 80px 80px;" />
+    <div class="absolute inset-0 pointer-events-none opacity-10" 
+      style="background-image: linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px); background-size: 80px 80px;" 
+    />
 
     <!-- Рамка выделения -->
     <div
@@ -37,7 +27,7 @@
         v-for="conn in store.connections"
         :key="conn.id"
         :d="getPath(conn)"
-        stroke="#60a5fa" 
+        :stroke="getConnectionColor(conn)"
         stroke-width="2.5" 
         fill="none"
         stroke-linecap="round"
@@ -56,37 +46,26 @@
       }"
       @pointerdown="onNodePointerDown($event, node)"
     >
-      <DraggableNote
+      <NodesTemplate
         :node-id="node.id"
-        :title="node.name"
-        :inputs="node.inputs"
-        :outputs="node.outputs"
-        :data="node.data"
-        :is-source="isSourceNode(node.id)"
-        :source-port-idx="clickSource?.idx"
+        :title="node.config?.name || node.name"
+        :node-color="node.config?.color || '#6ee7b7'"
+        :tags="node.config?.tags || []"
+
+        :max-tags="node.config?.maxTags || 5"
+        :has-description="node.config?.hasDescription ?? true"
+        :has-output="node.config?.hasOutput ?? true"
+        :has-input="node.config?.hasInput ?? false"
+        :output-type="node.config?.outputType"
+        :has-output-connection="hasOutputConnection(node.id, 0)"
         :is-selected="store.isSelected(node.id)"
+        :is-source="isSourceNode(node.id)"
         :z-index="node.zIndex"
-        :connections="store.connections"
+        v-model="node.data"
         @port-click="handlePortClick"
-        @delete-input-connection="handleDeleteInputConnection"
-        @delete-output-connections="handleDeleteOutputConnections"
-      >
-        <div class="text-zinc-400 text-xs">
-          <div v-if="node.template === 'number'" class="flex items-center gap-2">
-            <span class="text-blue-400">Значение:</span>
-            <input 
-              type="number" 
-              v-model.number="node.data.value" 
-              class="w-16 bg-zinc-800 border border-zinc-700 rounded px-1 text-white text-xs"
-              @change="onDataChange"
-              @pointerdown.stop
-            >
-          </div>
-          <div v-else>
-            {{ node.inputs.length }} in / {{ node.outputs.length }} out
-          </div>
-        </div>
-      </DraggableNote>
+        @port-mouse-down="handlePortMouseDown"
+        @focus-change="onNodeFocusChange"
+      />
     </div>
   </div>
 </template>
@@ -94,7 +73,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useBoardStore } from '../store/boardStore'
-import DraggableNote from './DraggableNote.vue'
+import NodesTemplate from './NodesTemplate.vue'
 
 const props = defineProps({
   scale: { type: Number, default: 1 },
@@ -106,40 +85,61 @@ const emit = defineEmits(['centerCanvas'])
 
 const store = useBoardStore()
 
-// === DEBUG ===
-const debugJson = computed(() => {
-  return JSON.stringify({
-    selected: Array.from(store.selectedNodeIds),
-    canUndo: store.canUndo(),
-    canRedo: store.canRedo(),
-    nodes: store.nodes.length,
-    connections: store.connections.length
-  }, null, 2)
-})
+// Флаг фокуса на инпуте любой ноды
+const isInputFocused = ref(false)
 
-// === SELECTION RECT ===
+const onNodeFocusChange = (focused) => {
+  isInputFocused.value = focused
+}
+
+const hasOutputConnection = (nodeId, idx) => {
+  return store.connections.some(c => c.fromNodeId === nodeId && c.fromOutIdx === idx)
+}
+
+const hasInputConnection = (nodeId, idx) => {
+  return store.connections.some(c => c.toNodeId === nodeId && c.toInIdx === idx)
+}
+
+// Получить подключённые ноды для композитора
+const getConnectedNodes = (composerNodeId) => {
+  const connections = store.connections.filter(c => c.toNodeId === composerNodeId)
+  return connections.map(conn => {
+    const fromNode = store.getNodeById(conn.fromNodeId)
+    if (!fromNode) return null
+    return {
+      nodeId: fromNode.id,
+      name: fromNode.config?.name || fromNode.name,
+      color: fromNode.config?.color || '#6ee7b7',
+      type: fromNode.type,
+      prompt: fromNode.data?.tags?.map(t => t.prompt).join(', ') || ''
+    }
+  }).filter(Boolean)
+}
+
+const getConnectionColor = (conn) => {
+  const fromNode = store.getNodeById(conn.fromNodeId)
+  return fromNode?.preset?.color || '#6ee7b7'
+}
+
+// === SELECTION ===
 const selectionRect = ref(null)
 const isSelecting = ref(false)
 const selectStart = ref({ x: 0, y: 0 })
-
-// === CLICK CONNECTION ===
 const clickSource = ref(null)
-const isMultiSelect = ref(false)
 
 const isSourceNode = (nodeId) => clickSource.value?.nodeId === nodeId
 
-// === POINTER EVENTS ===
 const onCanvasPointerDown = (e) => {
-  // Если клик по ноде - не начинаем рамку
-  if (e.target.closest('[data-id]')) return
-  
-  // Если не Ctrl - сбрасываем выделение
-  isMultiSelect.value = e.ctrlKey || e.metaKey
-  if (!isMultiSelect.value) {
-    store.clearSelection()
+  // Блокируем среднюю кнопку мыши (колесико) - она для пана
+  if (e.button === 1) {
+    e.stopPropagation()
+    return
   }
   
-  // Начинаем рамку выделения
+  if (e.target.closest('[data-id]')) return
+  
+  if (!(e.ctrlKey || e.metaKey)) store.clearSelection()
+  
   const canvasContainer = document.querySelector('.board-container')
   if (!canvasContainer) return
   
@@ -176,7 +176,6 @@ const onSelectMove = (e) => {
 const onSelectUp = () => {
   if (!isSelecting.value) return
   
-  // Выделяем ноды в рамке
   if (selectionRect.value.width > 10 || selectionRect.value.height > 10) {
     store.selectNodesInRect(
       selectionRect.value.x,
@@ -192,33 +191,45 @@ const onSelectUp = () => {
   document.removeEventListener('pointerup', onSelectUp)
 }
 
-// === NODE DRAG & SELECT ===
+// === NODE DRAG ===
 let draggedNode = null
 let dragStartPos = { x: 0, y: 0 }
 let dragStartMouse = { x: 0, y: 0 }
 let isDragging = false
 
 const onNodePointerDown = (e, node) => {
+  // Только левая кнопка мыши, не средняя (колесико)
   if (e.button !== 0) return
-  if (e.target.closest('[data-port]')) return
+  
+  // Не начинаем drag если есть фокус на инпуте
+  if (isInputFocused.value) return
+  
+  // Drag только по пустому фону - не по тегам, кнопкам, полям, портам
+  const target = e.target
+  if (
+    target.closest('[data-port]') ||
+    target.closest('button') ||
+    target.closest('textarea') ||
+    target.closest('input') ||
+    target.closest('.pi') ||
+    target.closest('.cursor-pointer') ||
+    target.closest('.rounded-full') ||
+    target.closest('.p-dialog')
+  ) {
+    return
+  }
   
   e.stopPropagation()
   
-  isMultiSelect.value = e.ctrlKey || e.metaKey
+  const isMulti = e.ctrlKey || e.metaKey
   
-  // Если не в мультиселекте и нода не выделена - сбрасываем
-  if (!isMultiSelect.value && !store.isSelected(node.id)) {
+  if (!isMulti && !store.isSelected(node.id)) {
     store.selectNode(node.id, false)
-  } else if (isMultiSelect.value) {
-    // Ctrl+клик - добавляем/убираем из выделения
+  } else if (isMulti) {
     store.selectNode(node.id, true)
-    return // Не начинаем drag при Ctrl+клик
-  } else if (store.isSelected(node.id) && store.selectedCount > 1) {
-    // Клик по выделенной ноде в группе - начинаем групповой drag
-    store.selectNode(node.id, false)
+    return
   }
   
-  // Начинаем drag
   isDragging = true
   draggedNode = node
   dragStartPos = { x: node.x, y: node.y }
@@ -236,13 +247,10 @@ const onNodeDragMove = (e) => {
   const dy = (e.clientY - dragStartMouse.y) / props.scale
   
   if (store.selectedCount > 1 && store.isSelected(draggedNode.id)) {
-    // Двигаем все выделенные ноды
     store.updateSelectedNodesPosition(dx - (draggedNode.x - dragStartPos.x), dy - (draggedNode.y - dragStartPos.y))
-    // Обновляем стартовую позицию для следующего кадра
     dragStartPos = { x: draggedNode.x, y: draggedNode.y }
     dragStartMouse = { x: e.clientX, y: e.clientY }
   } else {
-    // Двигаем одну ноду
     draggedNode.x = dragStartPos.x + dx
     draggedNode.y = dragStartPos.y + dy
   }
@@ -251,7 +259,6 @@ const onNodeDragMove = (e) => {
 const onNodeDragUp = () => {
   if (!isDragging) return
   
-  // Сохраняем позиции
   if (store.selectedCount > 1) {
     store.selectedNodes.forEach(n => store.updateNodePosition(n.id, n.x, n.y))
   } else if (draggedNode) {
@@ -271,23 +278,11 @@ const handlePortClick = (e, type, idx, portType, nodeId) => {
   if (!clickSource.value) {
     if (type !== 'output') return
     clickSource.value = { nodeId, idx, portType }
-    if (!store.isSelected(nodeId)) {
-      store.selectNode(nodeId, false)
-    }
+    if (!store.isSelected(nodeId)) store.selectNode(nodeId, false)
   } else {
     const source = clickSource.value
     
-    if (type !== 'input') {
-      clickSource.value = null
-      return
-    }
-    
-    if (nodeId === source.nodeId) {
-      clickSource.value = null
-      return
-    }
-    
-    if (portType !== source.portType) {
+    if (type !== 'input' || nodeId === source.nodeId || portType !== source.portType) {
       clickSource.value = null
       return
     }
@@ -297,80 +292,8 @@ const handlePortClick = (e, type, idx, portType, nodeId) => {
   }
 }
 
-const handleDeleteInputConnection = (nodeId, inputIdx) => {
-  store.deleteConnectionsToInput(nodeId, inputIdx)
-}
-
-const handleDeleteOutputConnections = (nodeId, outputIdx) => {
-  store.deleteConnectionsFromOutput(nodeId, outputIdx)
-}
-
-// === DATA CHANGE ===
-const onDataChange = () => {
-  store.recalculate()
-  store.saveState()
-}
-
-// === KEYBOARD ===
-const handleKeyDown = (e) => {
-  // Escape - отмена соединения или выделения
-  if (e.key === 'Escape') {
-    if (clickSource.value) {
-      clickSource.value = null
-    } else {
-      store.clearSelection()
-    }
-    return
-  }
-
-  if (e.ctrlKey || e.metaKey) {
-    // Undo/Redo
-    if ((e.key === 'z' || e.key === 'я' || e.code === 'KeyZ') && !e.shiftKey) {
-      e.preventDefault()
-      store.undo()
-      return
-    }
-    if (e.key === 'y' || e.key === 'н' || e.code === 'KeyY' || ((e.key === 'z' || e.key === 'я' || e.code === 'KeyZ') && e.shiftKey)) {
-      e.preventDefault()
-      store.redo()
-      return
-    }
-    
-    // Z-index
-    if ((e.key === '[' || e.key === 'х') && store.hasSelection) {
-      e.preventDefault()
-      store.selectedNodes.forEach(n => store.sendToBack(n.id, false))
-      store.saveState()
-      return
-    }
-    if ((e.key === ']' || e.key === 'ъ') && store.hasSelection) {
-      e.preventDefault()
-      store.selectedNodes.forEach(n => store.bringToFront(n.id, false))
-      store.saveState()
-      return
-    }
-    
-    // Copy
-    if ((e.key === 'c' || e.key === 'с' || e.code === 'KeyC') && store.hasSelection) {
-      e.preventDefault()
-      store.copySelectedNodes()
-      return
-    }
-    
-    // Paste
-    if (e.key === 'v' || e.key === 'м' || e.code === 'KeyV') {
-      e.preventDefault()
-      const canvasCenterX = 3000
-      const canvasCenterY = 2000
-      store.pasteNode(canvasCenterX, canvasCenterY)
-      return
-    }
-  }
-  
-  // Delete selected
-  if ((e.key === 'Delete' || e.key === 'Backspace') && store.hasSelection) {
-    store.deleteSelectedNodes()
-  }
+const handlePortMouseDown = () => {
+  // Для drag соединения
 }
 
 // === PATH ===
@@ -380,15 +303,55 @@ const getPath = (conn) => {
   
   if (!fromNode || !toNode) return ''
   
-  const fromX = fromNode.x + 240
-  const fromY = fromNode.y + 35 + conn.fromOutIdx * 28 + 10
+  // Output справа снизу (ромб)
+  const fromX = fromNode.x + 320
+  const fromY = fromNode.y + 160
+  
+  // Input слева по центру
   const toX = toNode.x
-  const toY = toNode.y + 35 + conn.toInIdx * 28 + 10
+  const toY = toNode.y + 100
   
   const dx = toX - fromX
   const tension = Math.max(Math.abs(dx) * 0.5, 100)
   
   return `M ${fromX},${fromY} C ${fromX + tension},${fromY} ${toX - tension},${toY} ${toX},${toY}`
+}
+
+// === KEYBOARD ===
+const handleKeyDown = (e) => {
+  if (e.key === 'Escape') {
+    if (clickSource.value) clickSource.value = null
+    else store.clearSelection()
+    return
+  }
+
+  if (e.ctrlKey || e.metaKey) {
+    if ((e.key === 'z' || e.key === 'я' || e.code === 'KeyZ') && !e.shiftKey) {
+      e.preventDefault()
+      store.undo()
+      return
+    }
+    if (e.key === 'y' || e.key === 'н' || e.code === 'KeyY' || ((e.key === 'z' || e.key === 'я') && e.shiftKey)) {
+      e.preventDefault()
+      store.redo()
+      return
+    }
+    if ((e.key === 'c' || e.key === 'с' || e.code === 'KeyC') && store.hasSelection) {
+      e.preventDefault()
+      store.copySelectedNodes()
+      return
+    }
+    if (e.key === 'v' || e.key === 'м' || e.code === 'KeyV') {
+      e.preventDefault()
+      store.pasteNode(3000, 2000)
+      return
+    }
+  }
+  
+  // Удаление только по Delete (не Backspace!) и только когда нет фокуса на инпуте
+  if (e.key === 'Delete' && store.hasSelection && !isInputFocused.value) {
+    store.deleteSelectedNodes()
+  }
 }
 
 // === CENTER ===
@@ -403,7 +366,6 @@ const centerCanvas = () => {
   emit('centerCanvas', { panX: targetPanX, panY: targetPanY })
 }
 
-// === LIFECYCLE ===
 onMounted(() => {
   document.addEventListener('keydown', handleKeyDown)
   store.loadFromSession()

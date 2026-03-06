@@ -4,27 +4,27 @@
     class="absolute top-5 left-5 w-72 max-h-[calc(100vh-2.5rem)] flex flex-col z-50 border border-zinc-800 text-white backdrop-blur-md shadow-2xl rounded-xl"
   >
     <template #icons>
-      <span class="text-[10px] text-zinc-500 px-2 py-0.5 rounded-full border border-zinc-700 mr-2">{{ Object.keys(templates).length }} шт.</span>
+      <span class="text-[10px] text-zinc-500 px-2 py-0.5 rounded-full border border-zinc-700 mr-2">{{ nodeConfigsList.length }} шт.</span>
     </template>
 
     <div class="p-2 space-y-2">
       <!-- Шаблоны нод -->
       <div 
-        v-for="(template, key) in templates" 
-        :key="key"
+        v-for="config in nodeConfigsList" 
+        :key="config.type"
         class="group flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-zinc-800/80 transition-all border border-transparent hover:border-zinc-700"
-        @click="createNode(key)"
+        @click="createNode(config.type)"
       >
         <div 
           class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-          :class="getTemplateColor(key)"
+          :style="{ backgroundColor: config.color + '30', color: config.color }"
         >
-          <i :class="getTemplateIcon(key)"></i>
+          <i :class="config.icon || 'pi pi-tag'"></i>
         </div>
         <div class="flex-1">
-          <div class="text-sm font-medium text-zinc-200 group-hover:text-white">{{ template.name }}</div>
+          <div class="text-sm font-medium text-zinc-200 group-hover:text-white">{{ config.name }}</div>
           <div class="text-[10px] text-zinc-500">
-            {{ template.inputs.length }} in / {{ template.outputs.length }} out
+            {{ config.hasInput ? '1 in' : '0 in' }} / {{ config.hasOutput ? '1 out' : '0 out' }}
           </div>
         </div>
         <i class="pi pi-plus text-zinc-600 group-hover:text-zinc-400 text-xs"></i>
@@ -35,11 +35,11 @@
       <!-- Хоткеи -->
       <div class="text-[10px] text-zinc-500 space-y-1 px-1">
         <div class="font-bold text-zinc-400 mb-1">Горячие клавиши:</div>
+        <div class="flex justify-between"><span>Ctrl+Click</span><span>Мультиселект</span></div>
+        <div class="flex justify-between"><span>Drag</span><span>Рамка выделения</span></div>
         <div class="flex justify-between"><span>Ctrl+Z/Y</span><span>Отмена/Повтор</span></div>
-        <div class="flex justify-between"><span>Ctrl+[ / ]</span><span>Назад/Вперёд</span></div>
         <div class="flex justify-between"><span>Ctrl+C/V</span><span>Копировать/Вставить</span></div>
-        <div class="flex justify-between"><span>Delete</span><span>Удалить ноду</span></div>
-        <div class="flex justify-between"><span>Esc</span><span>Отменить связь</span></div>
+        <div class="flex justify-between"><span>Delete</span><span>Удалить</span></div>
       </div>
 
       <Divider class="!my-3" />
@@ -73,43 +73,18 @@
 import { computed } from 'vue'
 import { Panel, Button, Divider } from 'primevue'
 import { useBoardStore } from '../store/boardStore'
+import { getAllNodeConfigs } from '../data/nodeConfig'
 
 const store = useBoardStore()
 
-const templates = computed(() => store.nodeTemplates)
+const nodeConfigsList = computed(() => getAllNodeConfigs())
 
-const getTemplateColor = (key) => {
-  const colors = {
-    number: 'bg-blue-500/20 text-blue-400',
-    doubler: 'bg-green-500/20 text-green-400',
-    adder: 'bg-yellow-500/20 text-yellow-400',
-    tripler: 'bg-purple-500/20 text-purple-400',
-    output: 'bg-red-500/20 text-red-400'
-  }
-  return colors[key] || 'bg-zinc-700 text-zinc-400'
-}
-
-const getTemplateIcon = (key) => {
-  const icons = {
-    number: 'pi pi-hashtag',
-    doubler: 'pi pi-times',
-    adder: 'pi pi-plus',
-    tripler: 'pi pi-eject',
-    output: 'pi pi-sign-out'
-  }
-  return icons[key] || 'pi pi-circle'
-}
-
-const createNode = (templateKey) => {
+const createNode = (type) => {
   const canvasCenterX = 3000
   const canvasCenterY = 2000
   const randomOffset = () => (Math.random() - 0.5) * 100
   
-  store.createNode(
-    templateKey,
-    canvasCenterX + randomOffset(),
-    canvasCenterY + randomOffset()
-  )
+  store.createNode(type, canvasCenterX + randomOffset(), canvasCenterY + randomOffset())
 }
 
 const confirmClear = () => {
@@ -121,7 +96,7 @@ const confirmClear = () => {
 const resetToDefault = () => {
   if (confirm('Сбросить к дефолтному графу?')) {
     store.clearAll()
-    store.loadDefaultGraph()
+    store.loadDefault()
   }
 }
 </script>
