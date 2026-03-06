@@ -69,7 +69,7 @@
         :connections="store.connections"
         @port-click="handlePortClick"
         @delete-input-connection="handleDeleteInputConnection"
-        @delete-output-connection="handleDeleteOutputConnection"
+        @delete-output-connections="handleDeleteOutputConnections"
       >
         <div class="text-zinc-400 text-xs">
           <div v-if="node.template === 'number'" class="flex items-center gap-2">
@@ -301,7 +301,7 @@ const handleDeleteInputConnection = (nodeId, inputIdx) => {
   store.deleteConnectionsToInput(nodeId, inputIdx)
 }
 
-const handleDeleteOutputConnection = (nodeId, outputIdx) => {
+const handleDeleteOutputConnections = (nodeId, outputIdx) => {
   store.deleteConnectionsFromOutput(nodeId, outputIdx)
 }
 

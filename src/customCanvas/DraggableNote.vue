@@ -19,7 +19,7 @@
       <slot></slot>
     </div>
 
-    <!-- Входы (слева) с минусом для удаления связи -->
+    <!-- Входы (слева) - только удаление связи через минус -->
     <div 
       v-for="(input, idx) in inputs" 
       :key="'in-'+idx"
@@ -47,13 +47,13 @@
       <div v-else class="w-2 h-2 bg-white rounded-full pointer-events-none"></div>
     </div>
 
-    <!-- Выходы (справа) с минусом для удаления связи -->
+    <!-- Выходы (справа) - Ctrl+Click для удаления всех связей -->
     <div 
       v-for="(output, idx) in outputs" 
       :key="'out-'+idx"
       class="port-output absolute right-0 w-5 h-5 rounded-full cursor-pointer transition shadow-lg border-2 border-zinc-900 flex items-center justify-center"
       :class="[
-        hasOutputConnection(idx) ? 'bg-yellow-500 hover:bg-red-500' : 'bg-blue-500 hover:scale-125',
+        hasOutputConnection(idx) ? 'bg-yellow-500' : 'bg-blue-500 hover:scale-125',
         isSource && sourcePortIdx === idx ? 'ring-2 ring-yellow-400 animate-pulse' : ''
       ]"
       :style="{ top: `${35 + idx * 28}px` }"
@@ -61,18 +61,9 @@
       :data-idx="idx"
       :data-type="output.type"
       @click.stop="onOutputClick($event, idx, output.type)"
-      @mouseenter="hoveredOutput = idx"
-      @mouseleave="hoveredOutput = null"
     >
-      <!-- Минус при наведении на связанный output -->
-      <span 
-        v-if="hasOutputConnection(idx) && hoveredOutput === idx" 
-        class="text-white text-xs font-bold pointer-events-none"
-      >
-        −
-      </span>
       <!-- Точка по умолчанию -->
-      <div v-else class="w-2 h-2 bg-white rounded-full pointer-events-none"></div>
+      <div class="w-2 h-2 bg-white rounded-full pointer-events-none"></div>
     </div>
   </div>
 </template>
@@ -93,10 +84,9 @@ const props = defineProps({
   connections: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['portClick', 'deleteInputConnection', 'deleteOutputConnection'])
+const emit = defineEmits(['portClick', 'deleteInputConnection', 'deleteOutputConnections'])
 
 const hoveredInput = ref(null)
-const hoveredOutput = ref(null)
 
 const hasInputConnection = (idx) => {
   return props.connections.some(c => c.toNodeId === props.nodeId && c.toInIdx === idx)
@@ -117,13 +107,14 @@ const onInputClick = (e, idx, portType) => {
 }
 
 const onOutputClick = (e, idx, portType) => {
-  // Если есть связь и наведены - удаляем связь
-  if (hasOutputConnection(idx) && hoveredOutput.value === idx) {
-    emit('deleteOutputConnection', props.nodeId, idx)
-  } else {
-    // Иначе начинаем/продолжаем соединение
-    emit('portClick', e, 'output', idx, portType, props.nodeId)
+  // Ctrl+Click на output с связями - удаляем все связи этого output
+  if ((e.ctrlKey || e.metaKey) && hasOutputConnection(idx)) {
+    emit('deleteOutputConnections', props.nodeId, idx)
+    return
   }
+  
+  // Обычный клик - начинаем/продолжаем соединение
+  emit('portClick', e, 'output', idx, portType, props.nodeId)
 }
 </script>
 
