@@ -5,7 +5,7 @@
     ref="nodeRef"
     class="relative w-[320px] backdrop-blur-md transition-all flex flex-col"
     :class="[
-      isSelected ? 'ring-2 ring-white' : '',
+      isSelected ? 'ring-2 ring-white opacity-75' : 'opacity-100',
       isSource ? 'animate-pulse' : ''
     ]"
     :style="{ 
@@ -102,20 +102,20 @@
       <div class="w-2 h-2 bg-white rounded-full -rotate-45"></div>
     </div>
 
-    <!-- Input порт (круг) -->
+    <!-- Input порт (ромб в верхнем левом углу) -->
     <div 
       v-if="hasInput"
-      class="absolute -left-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full cursor-pointer transition flex items-center justify-center border-2 border-zinc-900"
-      :class="[hasInputConnection ? 'bg-yellow-500 hover:bg-red-500' : 'bg-green-500 hover:scale-110']"
+      class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      :style="{ 
+        backgroundColor: hasInputConnection ? '#eab308' : nodeColor,
+        border: '2px solid #18181b'
+      }"
       :data-port="'input'"
       data-idx="0"
       :data-type="inputType"
       @click.stop="onInputClick"
-      @mouseenter="hoveredInput = true"
-      @mouseleave="hoveredInput = false"
     >
-      <span v-if="hasInputConnection && hoveredInput" class="text-white text-xs font-bold">−</span>
-      <div v-else class="w-2 h-2 bg-white rounded-full"></div>
+      <div class="w-2 h-2 bg-white rounded-full -rotate-45"></div>
     </div>
 
     <!-- Модал всех тегов -->
@@ -207,10 +207,10 @@
       {{ title }}
     </div>
     
-    <!-- Input порт (ромб слева) -->
+    <!-- Input порт (ромб в верхнем левом углу) -->
     <div 
       v-if="hasInput"
-      class="absolute -left-3 top-8 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
       :style="{ 
         backgroundColor: hasInputConnection ? '#eab308' : nodeColor,
         border: '2px solid #18181b'
@@ -218,7 +218,6 @@
       :data-port="'input'"
       data-idx="0"
       :data-type="inputType"
-      @pointerdown.stop="onInputPointerDown"
       @click.stop="onInputClick"
     >
       <div class="w-2 h-2 bg-white rounded-full -rotate-45"></div>
@@ -289,7 +288,7 @@
       ></textarea>
     </div>
 
-    <!-- Output порт (ромб справа снизу) -->
+    <!-- Output порт (ромб в правом нижнем углу) -->
     <div 
       v-if="hasOutput"
       class="absolute -right-3 -bottom-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
@@ -301,7 +300,6 @@
       :data-port="'output'"
       data-idx="0"
       :data-type="outputType"
-      @pointerdown.stop="onOutputPointerDown"
       @click.stop="onOutputClick"
     >
       <div class="w-2 h-2 bg-white rounded-full -rotate-45"></div>
@@ -352,7 +350,8 @@ const emit = defineEmits([
   'update:modelValue',
   'portClick',
   'portMouseDown',
-  'deleteInputConnection',
+  'deleteInputConnections',
+  'deleteOutputConnections',
   'focusChange'
 ])
 
@@ -361,7 +360,6 @@ const localTags = ref(props.modelValue.tags || [])
 const localDescription = ref(props.modelValue.description || '')
 const showTagModal = ref(false)
 const searchQuery = ref('')
-const hoveredInput = ref(false)
 
 // === КОМПОЗИТОР ===
 const localEnabledSources = ref(props.modelValue.enabledSources || {})
@@ -465,15 +463,24 @@ const onInputBlur = () => emit('focusChange', false)
 // === ПОРТЫ ===
 const onInputPointerDown = (e) => emit('portMouseDown', e, 'input', 0, props.inputType, props.nodeId)
 const onInputClick = (e) => {
-  if (props.hasInputConnection && hoveredInput.value) {
-    emit('deleteInputConnection', props.nodeId, 0)
-  } else {
-    emit('portClick', e, 'input', 0, props.inputType, props.nodeId)
+  // Ctrl+Click на input - удалить все связи к этому input
+  if (e.ctrlKey || e.metaKey && props.hasInputConnection) {
+    e.stopPropagation()
+    e.preventDefault()
+    emit('deleteInputConnections', props.nodeId, 0)
+    return
   }
+  emit('portClick', e, 'input', 0, props.inputType, props.nodeId)
 }
 const onOutputPointerDown = (e) => emit('portMouseDown', e, 'output', 0, props.outputType, props.nodeId)
 const onOutputClick = (e) => {
-  if (e.ctrlKey || e.metaKey) return
+  // Ctrl+Click на output - удалить все связи этого output
+  if (e.ctrlKey || e.metaKey) {
+    e.stopPropagation()
+    e.preventDefault()
+    emit('deleteOutputConnections', props.nodeId, 0)
+    return
+  }
   emit('portClick', e, 'output', 0, props.outputType, props.nodeId)
 }
 

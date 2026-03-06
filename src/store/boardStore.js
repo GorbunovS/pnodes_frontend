@@ -160,7 +160,13 @@ export const useBoardStore = defineStore('board', () => {
     )
     if (exists) return false
 
-    connections.value = connections.value.filter(c => !(c.toNodeId === toNodeId && c.toInIdx === toInIdx))
+    // Для обычных нод - удаляем существующие связи к этому input (только одна связь разрешена)
+    // Для композитора - разрешаем множественные связи
+    const isComposer = toNode.config?.isComposer
+    if (!isComposer) {
+      connections.value = connections.value.filter(c => !(c.toNodeId === toNodeId && c.toInIdx === toInIdx))
+    }
+    
     connections.value.push({ id: generateId(), fromNodeId, fromOutIdx, toNodeId, toInIdx })
     if (saveHistory) saveState()
     return true
@@ -173,6 +179,11 @@ export const useBoardStore = defineStore('board', () => {
 
   const deleteConnectionsToInput = (nodeId, inputIdx, saveHistory = true) => {
     connections.value = connections.value.filter(c => !(c.toNodeId === nodeId && c.toInIdx === inputIdx))
+    if (saveHistory) saveState()
+  }
+
+  const deleteConnectionById = (connectionId, saveHistory = true) => {
+    connections.value = connections.value.filter(c => c.id !== connectionId)
     if (saveHistory) saveState()
   }
 
@@ -241,7 +252,7 @@ export const useBoardStore = defineStore('board', () => {
     createNode, deleteNode, deleteSelectedNodes,
     updateNodePosition, updateSelectedNodesPosition,
     bringToFront, sendToBack,
-    createConnection, deleteConnectionsFromOutput, deleteConnectionsToInput,
+    createConnection, deleteConnectionsFromOutput, deleteConnectionsToInput, deleteConnectionById,
     copySelectedNodes, pasteNode,
     loadFromSession, clearAll,
     saveState, undo, redo,

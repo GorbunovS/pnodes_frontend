@@ -22,8 +22,13 @@ export const connectionRules = {
   [nodeTypes.COMPOSER]: [nodeTypes.RESULT]
 }
 
-// Проверить можно ли соединить two типа
-export const canConnect = (fromType, toType) => {
+// Проверить можно ли соединить два типа
+export const canConnect = (fromType, toType, toConfig = null) => {
+  // Композитор принимает любой тип (кроме другого композитора и результата)
+  if (toConfig?.acceptAnyInput) {
+    return ![nodeTypes.COMPOSER, nodeTypes.RESULT].includes(fromType)
+  }
+  
   const allowed = connectionRules[fromType]
   return allowed ? allowed.includes(toType) : false
 }
@@ -107,8 +112,8 @@ export const nodeConfigs = {
     color: '#93c5fd', // голубой
     hasDescription: false,
     hasInput: true,
-    inputType: nodeTypes.COMPOSER, // Тип входа
-    inputTypes: [nodeTypes.LIGHTING, nodeTypes.CAMERA, nodeTypes.STYLE, nodeTypes.ENVIRONMENT, nodeTypes.MOOD],
+    inputType: 'any', // Принимает любой тип
+    acceptAnyInput: true, // Флаг для проверки соединений
     hasOutput: true,
     outputType: nodeTypes.COMPOSER,
     maxTags: 0,

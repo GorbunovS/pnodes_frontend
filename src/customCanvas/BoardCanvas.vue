@@ -22,16 +22,30 @@
     />
 
     <!-- Линии соединений -->
-    <svg class="absolute inset-0 pointer-events-none overflow-visible" style="width: 100%; height: 100%;">
+    <svg class="absolute inset-0 overflow-visible" style="width: 100%; height: 100%; pointer-events: none;">
       <path
         v-for="conn in store.connections"
         :key="conn.id"
+        :d="getPath(conn)"
+        :stroke="getConnectionColor(conn)"
+        stroke-width="6"
+        fill="none"
+        stroke-linecap="round"
+        class="connection-line cursor-pointer"
+        style="pointer-events: stroke;"
+        @click="(e) => onConnectionClick(e, conn)"
+      />
+      <!-- Видимая тонкая линия поверх -->
+      <path
+        v-for="conn in store.connections"
+        :key="'visible-' + conn.id"
         :d="getPath(conn)"
         :stroke="getConnectionColor(conn)"
         stroke-width="2.5" 
         fill="none"
         stroke-linecap="round"
         class="drop-shadow-md"
+        style="pointer-events: none;"
       />
     </svg>
 
@@ -51,20 +65,23 @@
         :title="node.config?.name || node.name"
         :node-color="node.config?.color || '#6ee7b7'"
         :tags="node.config?.tags || []"
-
+        :is-composer="node.config?.isComposer ?? false"
         :max-tags="node.config?.maxTags || 5"
         :has-description="node.config?.hasDescription ?? true"
         :has-output="node.config?.hasOutput ?? true"
         :has-input="node.config?.hasInput ?? false"
         :output-type="node.config?.outputType"
         :has-output-connection="hasOutputConnection(node.id, 0)"
+        :has-input-connection="hasInputConnection(node.id, 0)"
         :is-selected="store.isSelected(node.id)"
         :is-source="isSourceNode(node.id)"
         :z-index="node.zIndex"
+        :connected-nodes="node.config?.isComposer ? getConnectedNodes(node.id) : []"
         v-model="node.data"
         @port-click="handlePortClick"
         @port-mouse-down="handlePortMouseDown"
-        @focus-change="onNodeFocusChange"
+        @delete-output-connections="handleDeleteOutputConnections"
+        @delete-input-connections="handleDeleteInputConnections"
       />
     </div>
   </div>
@@ -73,6 +90,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useBoardStore } from '../store/boardStore'
+import { canConnect } from '../data/nodeConfig'
 import NodesTemplate from './NodesTemplate.vue'
 
 const props = defineProps({
@@ -282,7 +300,25 @@ const handlePortClick = (e, type, idx, portType, nodeId) => {
   } else {
     const source = clickSource.value
     
-    if (type !== 'input' || nodeId === source.nodeId || portType !== source.portType) {
+    if (type !== 'input' || nodeId === source.nodeId) {
+      clickSource.value = null
+      return
+    }
+    
+    // Проверяем совместимость типов
+    const fromNode = store.getNodeById(source.nodeId)
+    const toNode = store.getNodeById(nodeId)
+    
+    if (!fromNode || !toNode) {
+      clickSource.value = null
+      return
+    }
+    
+    const fromType = fromNode.config?.outputType || fromNode.type
+    const toType = toNode.type
+    
+    if (!canConnect(fromType, toType, toNode.config)) {
+      console.log('Cannot connect', fromType, 'to', toType)
       clickSource.value = null
       return
     }
@@ -296,6 +332,14 @@ const handlePortMouseDown = () => {
   // Для drag соединения
 }
 
+const handleDeleteOutputConnections = (nodeId, outputIdx) => {
+  store.deleteConnectionsFromOutput(nodeId, outputIdx)
+}
+
+const handleDeleteInputConnections = (nodeId, inputIdx) => {
+  store.deleteConnectionsToInput(nodeId, inputIdx)
+}
+
 // === PATH ===
 const getPath = (conn) => {
   const fromNode = store.getNodeById(conn.fromNodeId)
@@ -303,13 +347,14 @@ const getPath = (conn) => {
   
   if (!fromNode || !toNode) return ''
   
-  // Output справа снизу (ромб)
-  const fromX = fromNode.x + 320
-  const fromY = fromNode.y + 160
+  // Output: ромб в правом нижнем углу
+  const fromX = fromNode.x + 320 + 12 // центр ромба (320 + половина 24)
+  const fromY = fromNode.y + 200 + 12 // примерно высота ноды + смещение ромба
   
-  // Input слева по центру
-  const toX = toNode.x
-  const toY = toNode.y + 100
+  // Input: ромб в верхнем левом углу (для композитора) или слева (для обычных)
+  const isComposer = toNode.config?.isComposer
+  const toX = toNode.x - 12 // левый край - половина ромба
+  const toY = isComposer ? toNode.y - 12 : toNode.y + 100 // сверху для композитора
   
   const dx = toX - fromX
   const tension = Math.max(Math.abs(dx) * 0.5, 100)
@@ -351,6 +396,15 @@ const handleKeyDown = (e) => {
   // Удаление только по Delete (не Backspace!) и только когда нет фокуса на инпуте
   if (e.key === 'Delete' && store.hasSelection && !isInputFocused.value) {
     store.deleteSelectedNodes()
+  }
+}
+
+const onConnectionClick = (e, conn) => {
+  // Ctrl+Click на линии - удалить связь
+  if (e.ctrlKey || e.metaKey) {
+    e.stopPropagation()
+    e.preventDefault()
+    store.deleteConnectionById(conn.id)
   }
 }
 
