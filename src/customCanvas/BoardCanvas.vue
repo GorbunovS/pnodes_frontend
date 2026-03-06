@@ -27,11 +27,26 @@
       style="width: 100%; height: 100%; pointer-events: none;"
       :key="`svg-${props.scale}-${props.panX}-${props.panY}`"
     >
+      <defs>
+        <linearGradient
+          v-for="conn in store.connections"
+          :key="`grad-${conn.id}`"
+          :id="`gradient-${conn.id}`"
+          gradientUnits="userSpaceOnUse"
+          :x1="getGradientCoords(conn).x1"
+          :y1="getGradientCoords(conn).y1"
+          :x2="getGradientCoords(conn).x2"
+          :y2="getGradientCoords(conn).y2"
+        >
+          <stop offset="0%" :stop-color="getConnectionColor(conn)" />
+          <stop offset="100%" :stop-color="getConnectionTargetColor(conn)" />
+        </linearGradient>
+      </defs>
       <path
         v-for="conn in store.connections"
         :key="`${conn.id}-${props.scale}-${props.panX}-${props.panY}`"
         :d="getPath(conn)"
-        :stroke="getConnectionColor(conn)"
+        :stroke="`url(#gradient-${conn.id})`"
         stroke-width="4"
         fill="none"
         stroke-linecap="round"
@@ -44,7 +59,7 @@
         v-for="conn in store.connections"
         :key="`visible-${conn.id}-${props.scale}-${props.panX}-${props.panY}`"
         :d="getPath(conn)"
-        :stroke="getConnectionColor(conn)"
+        :stroke="`url(#gradient-${conn.id})`"
         stroke-width="1.5" 
         fill="none"
         stroke-linecap="round"
@@ -185,6 +200,29 @@ const getComposerDataForResult = (resultNodeId) => {
 const getConnectionColor = (conn) => {
   const fromNode = store.getNodeById(conn.fromNodeId)
   return fromNode?.config?.color || '#6ee7b7'
+}
+
+const getConnectionTargetColor = (conn) => {
+  const toNode = store.getNodeById(conn.toNodeId)
+  return toNode?.config?.color || '#93c5fd'
+}
+
+const getGradientCoords = (conn) => {
+  const fromNode = store.getNodeById(conn.fromNodeId)
+  const toNode = store.getNodeById(conn.toNodeId)
+  
+  if (!fromNode || !toNode) return { x1: 0, y1: 0, x2: 0, y2: 0 }
+  
+  const isFromComposer = fromNode.config?.isComposer
+  const isFromResult = fromNode.config?.isResult
+  const fromWidth = isFromComposer ? 340 : (isFromResult ? 380 : 320)
+  
+  const x1 = fromNode.x + fromWidth
+  const y1 = fromNode.y
+  const x2 = toNode.x
+  const y2 = toNode.y
+  
+  return { x1, y1, x2, y2 }
 }
 
 // === SELECTION ===

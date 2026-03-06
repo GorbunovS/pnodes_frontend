@@ -8,14 +8,12 @@
       isSelected ? 'ring-2 ring-white' : '',
       isSource ? 'animate-pulse' : ''
     ]"
-    style="opacity: 0.7"
     :style="{ 
       zIndex: zIndex || 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.3)',
       border: `2px solid ${isSelected ? nodeColor : nodeColor + '99'}`,
-      borderRadius: '1rem 1rem 0 1rem',
-      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none',
-      opacity: isSelected ? '0.95' : '0.7'
+      borderRadius: '1rem',
+      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none'
     }"
     :data-id="nodeId"
   >
@@ -92,7 +90,8 @@
       class="absolute -right-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
       :style="{ 
         backgroundColor: hasOutputConnection ? nodeColor : '#18181b',
-        border: `2px solid ${nodeColor}`
+        border: `2px solid ${nodeColor}`,
+        opacity: '1'
       }"
       :data-port="'output'"
       data-idx="0"
@@ -114,7 +113,8 @@
       class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
       :style="{ 
         backgroundColor: hasInputConnection ? nodeColor : '#18181b',
-        border: `2px solid ${nodeColor}`
+        border: `2px solid ${nodeColor}`,
+        opacity: '1'
       }"
       :data-port="'input'"
       data-idx="0"
@@ -197,11 +197,10 @@
     ]"
     :style="{ 
       zIndex: zIndex || 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.3)',
       border: `2px solid ${isSelected ? nodeColor : nodeColor + '99'}`,
       borderRadius: '1rem',
-      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none',
-      opacity: isSelected ? '0.95' : '0.7'
+      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none'
     }"
     :data-id="nodeId"
   >
@@ -219,7 +218,8 @@
       class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
       :style="{ 
         backgroundColor: hasInputConnection ? nodeColor : '#18181b',
-        border: `2px solid ${nodeColor}`
+        border: `2px solid ${nodeColor}`,
+        opacity: '1'
       }"
       :data-port="'input'"
       data-idx="0"
@@ -316,7 +316,8 @@
       class="absolute -right-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
       :style="{ 
         backgroundColor: hasOutputConnection ? nodeColor : '#18181b',
-        border: `2px solid ${nodeColor}`
+        border: `2px solid ${nodeColor}`,
+        opacity: '1'
       }"
       :data-port="'output'"
       data-idx="0"
@@ -327,7 +328,7 @@
       <div 
         v-if="isSource"
         class="w-2 h-2 -rotate-45"
-        :style="{ backgroundColor: nodeColor }"
+        :style="{ backgroundColor: nodeColor, opacity: '1' }"
       ></div>
     </div>
   </div>
@@ -343,11 +344,10 @@
     ]"
     :style="{ 
       zIndex: zIndex || 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.3)',
       border: `2px solid ${isSelected ? nodeColor : nodeColor + '99'}`,
       borderRadius: '1rem',
-      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none',
-      opacity: isSelected ? '0.95' : '0.7'
+      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none'
     }"
     :data-id="nodeId"
   >
@@ -366,7 +366,8 @@
       class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
       :style="{ 
         backgroundColor: hasInputConnection ? nodeColor : '#18181b',
-        border: `2px solid ${nodeColor}`
+        border: `2px solid ${nodeColor}`,
+        opacity: '1'
       }"
       :data-port="'input'"
       data-idx="0"
