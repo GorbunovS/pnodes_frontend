@@ -136,7 +136,7 @@ const getConnectedNodes = (composerNodeId) => {
 
 const getConnectionColor = (conn) => {
   const fromNode = store.getNodeById(conn.fromNodeId)
-  return fromNode?.preset?.color || '#6ee7b7'
+  return fromNode?.config?.color || '#6ee7b7'
 }
 
 // === SELECTION ===
