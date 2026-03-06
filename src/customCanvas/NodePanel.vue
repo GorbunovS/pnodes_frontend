@@ -32,6 +32,18 @@
 
       <Divider class="!my-3" />
 
+      <!-- Хоткеи -->
+      <div class="text-[10px] text-zinc-500 space-y-1 px-1">
+        <div class="font-bold text-zinc-400 mb-1">Горячие клавиши:</div>
+        <div class="flex justify-between"><span>Ctrl+Z/Y</span><span>Отмена/Повтор</span></div>
+        <div class="flex justify-between"><span>Ctrl+[ / ]</span><span>Назад/Вперёд</span></div>
+        <div class="flex justify-between"><span>Ctrl+C/V</span><span>Копировать/Вставить</span></div>
+        <div class="flex justify-between"><span>Delete</span><span>Удалить ноду</span></div>
+        <div class="flex justify-between"><span>Esc</span><span>Отменить связь</span></div>
+      </div>
+
+      <Divider class="!my-3" />
+
       <!-- Действия -->
       <div class="space-y-2">
         <Button 
@@ -89,7 +101,6 @@ const getTemplateIcon = (key) => {
 }
 
 const createNode = (templateKey) => {
-  // Создаём ноду в центре видимой области с небольшим рандомом
   const canvasCenterX = 3000
   const canvasCenterY = 2000
   const randomOffset = () => (Math.random() - 0.5) * 100
