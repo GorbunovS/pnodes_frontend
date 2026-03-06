@@ -24,11 +24,12 @@ export const connectionRules = {
 
 // Проверить можно ли соединить два типа
 export const canConnect = (fromType, toType, toConfig = null) => {
-  // Композитор принимает любой тип (кроме другого композитора и результата)
-  if (toConfig?.acceptAnyInput) {
-    return ![nodeTypes.COMPOSER, nodeTypes.RESULT].includes(fromType)
+  // Если у целевой ноды указан acceptsFrom - используем его
+  if (toConfig?.acceptsFrom) {
+    return toConfig.acceptsFrom.includes(fromType)
   }
   
+  // Fallback на старые правила
   const allowed = connectionRules[fromType]
   return allowed ? allowed.includes(toType) : false
 }
@@ -112,8 +113,8 @@ export const nodeConfigs = {
     color: '#93c5fd', // голубой
     hasDescription: false,
     hasInput: true,
-    inputType: 'any', // Принимает любой тип
-    acceptAnyInput: true, // Флаг для проверки соединений
+    inputType: 'any',
+    acceptsFrom: [nodeTypes.LIGHTING, nodeTypes.CAMERA, nodeTypes.STYLE, nodeTypes.ENVIRONMENT, nodeTypes.MOOD], // Кого принимает
     hasOutput: true,
     outputType: nodeTypes.COMPOSER,
     maxTags: 0,
@@ -127,9 +128,10 @@ export const nodeConfigs = {
     color: '#fca5a5', // красный
     hasDescription: false,
     hasInput: true,
-    inputTypes: [nodeTypes.COMPOSER],
+    acceptsFrom: [nodeTypes.COMPOSER], // Принимает только композитор
     hasOutput: false,
-    maxTags: 0
+    maxTags: 0,
+    isResult: true
   }
 }
 
@@ -137,4 +139,4 @@ export const nodeConfigs = {
 export const getNodeConfig = (type) => nodeConfigs[type] || null
 
 // Получить все конфиги для панели (все кроме результата)
-export const getAllNodeConfigs = () => Object.values(nodeConfigs).filter(c => c.type !== nodeTypes.RESULT)
+export const getAllNodeConfigs = () => Object.values(nodeConfigs)

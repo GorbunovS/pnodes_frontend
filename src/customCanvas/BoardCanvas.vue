@@ -22,10 +22,14 @@
     />
 
     <!-- Линии соединений -->
-    <svg class="absolute inset-0 overflow-visible" style="width: 100%; height: 100%; pointer-events: none;">
+    <svg 
+      class="absolute inset-0 overflow-visible" 
+      style="width: 100%; height: 100%; pointer-events: none;"
+      :key="`svg-${props.scale}-${props.panX}-${props.panY}`"
+    >
       <path
         v-for="conn in store.connections"
-        :key="conn.id"
+        :key="`${conn.id}-${props.scale}-${props.panX}-${props.panY}`"
         :d="getPath(conn)"
         :stroke="getConnectionColor(conn)"
         stroke-width="4"
@@ -38,7 +42,7 @@
       <!-- Видимая тонкая линия поверх -->
       <path
         v-for="conn in store.connections"
-        :key="'visible-' + conn.id"
+        :key="`visible-${conn.id}-${props.scale}-${props.panX}-${props.panY}`"
         :d="getPath(conn)"
         :stroke="getConnectionColor(conn)"
         stroke-width="1.5" 
@@ -66,6 +70,7 @@
         :node-color="node.config?.color || '#6ee7b7'"
         :tags="node.config?.tags || []"
         :is-composer="node.config?.isComposer ?? false"
+        :is-result="node.config?.isResult ?? false"
         :max-tags="node.config?.maxTags || 5"
         :has-description="node.config?.hasDescription ?? true"
         :has-output="node.config?.hasOutput ?? true"
@@ -77,6 +82,7 @@
         :is-source="isSourceNode(node.id)"
         :z-index="node.zIndex"
         :connected-nodes="node.config?.isComposer ? getConnectedNodes(node.id) : []"
+        :composer-data="node.config?.isResult ? getComposerDataForResult(node.id) : null"
         v-model="node.data"
         @port-click="handlePortClick"
         @port-mouse-down="handlePortMouseDown"
@@ -132,6 +138,48 @@ const getConnectedNodes = (composerNodeId) => {
       prompt: fromNode.data?.tags?.map(t => t.prompt).join(', ') || ''
     }
   }).filter(Boolean)
+}
+
+const getComposerDataForResult = (resultNodeId) => {
+  // Находим подключенный композитор
+  const connection = store.connections.find(c => c.toNodeId === resultNodeId)
+  if (!connection) return null
+  
+  const composerNode = store.getNodeById(connection.fromNodeId)
+  if (!composerNode) return null
+  
+  // Собираем данные из композитора
+  const enabledSources = composerNode.data?.enabledSources || {}
+  const resolution = composerNode.data?.resolution || { width: 1024, height: 1024 }
+  const masterPrompt = composerNode.data?.masterPrompt || ''
+  
+  // Получаем подключенные ноды композитора
+  const sourceNodes = getConnectedNodes(composerNode.id)
+  
+  // Формируем массив промптов с типами для JSON
+  const structuredPrompts = sourceNodes
+    .filter(source => enabledSources[source.nodeId] !== false)
+    .map(source => ({
+      [source.type]: source.prompt
+    }))
+  
+  // Добавляем мастер промпт как отдельный тип
+  if (masterPrompt) {
+    structuredPrompts.push({ master: masterPrompt })
+  }
+  
+  // Формируем строковый промпт для текстового режима
+  const textPrompt = sourceNodes
+    .filter(source => enabledSources[source.nodeId] !== false)
+    .map(source => source.prompt)
+    .filter(Boolean)
+    .join(', ')
+  
+  return {
+    prompt: textPrompt,
+    structuredPrompts,
+    resolution
+  }
 }
 
 const getConnectionColor = (conn) => {
@@ -349,19 +397,20 @@ const getPath = (conn) => {
   
   // Определяем тип ноды для правильных размеров
   const isFromComposer = fromNode.config?.isComposer
+  const isFromResult = fromNode.config?.isResult
   const isToComposer = toNode.config?.isComposer
+  const isToResult = toNode.config?.isResult
   
-  // Размеры нод (width + запас для ромба)
-  const fromWidth = isFromComposer ? 340 : 320
-  const fromHeight = isFromComposer ? 400 : 320  // увеличил высоту чтобы попасть в ромб
+  // Размеры нод
+  const fromWidth = isFromComposer ? 340 : (isFromResult ? 380 : 320)
   
-  // Output: ромб (-right-3 -bottom-3) центр = (width + 12 - 12, height + 12 - 12)
-  const fromX = fromNode.x + fromWidth   // правый край ноды (ромб выступает на 12px, центр ромба = край ноды)
-  const fromY = fromNode.y + fromHeight  // нижний край ноды
+  // Output: правый верхний угол (x + width, y)
+  const fromX = fromNode.x + fromWidth
+  const fromY = fromNode.y
   
-  // Input: ромб (-left-3 -top-3) центр = (-12 + 12, -12 + 12) = (0, 0) относительно ноды
-  const toX = toNode.x                   // левый край ноды
-  const toY = isToComposer ? toNode.y : toNode.y + 140 // верх для композитора, середина для обычных
+  // Input: левый верхний угол (x, y)
+  const toX = toNode.x
+  const toY = toNode.y
   
   const dx = toX - fromX
   const tension = Math.max(Math.abs(dx) * 0.5, 100)

@@ -1,7 +1,7 @@
 <template>
   <!-- ОБЫЧНАЯ НОДА С ТЕГАМИ -->
   <div 
-    v-if="!isComposer"
+    v-if="!isComposer && !isResult"
     ref="nodeRef"
     class="relative w-[320px] backdrop-blur-md transition-all flex flex-col group"
     :class="[
@@ -86,10 +86,10 @@
       ></textarea>
     </div>
 
-    <!-- Output порт (ромб) -->
+    <!-- Output порт (ромб в правом верхнем углу) -->
     <div 
       v-if="hasOutput"
-      class="absolute -right-3 -bottom-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      class="absolute -right-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
       :style="{ 
         backgroundColor: hasOutputConnection ? nodeColor : '#18181b',
         border: `2px solid ${nodeColor}`
@@ -108,7 +108,7 @@
       ></div>
     </div>
 
-    <!-- Input порт (ромб в верхнем левом углу) -->
+    <!-- Input порт (ромб в левом верхнем углу) -->
     <div 
       v-if="hasInput"
       class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
@@ -121,7 +121,6 @@
       :data-type="inputType"
       @click.stop="onInputClick"
     >
-      <!-- Input не имеет активного состояния, только подключен/не подключен -->
     </div>
 
     <!-- Модал всех тегов -->
@@ -189,7 +188,7 @@
 
   <!-- КОМПОЗИТОР -->
   <div 
-    v-else
+    v-else-if="isComposer"
     ref="nodeRef"
     class="relative w-[340px] backdrop-blur-md transition-all flex flex-col group"
     :class="[
@@ -214,7 +213,7 @@
       {{ title }}
     </div>
     
-    <!-- Input порт (ромб в верхнем левом углу) -->
+    <!-- Input порт (ромб в левом верхнем углу) -->
     <div 
       v-if="hasInput"
       class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
@@ -311,10 +310,10 @@
       ></textarea>
     </div>
 
-    <!-- Output порт (ромб в правом нижнем углу) -->
+    <!-- Output порт (ромб в правом верхнем углу) -->
     <div 
       v-if="hasOutput"
-      class="absolute -right-3 -bottom-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      class="absolute -right-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
       :style="{ 
         backgroundColor: hasOutputConnection ? nodeColor : '#18181b',
         border: `2px solid ${nodeColor}`
@@ -330,6 +329,116 @@
         class="w-2 h-2 -rotate-45"
         :style="{ backgroundColor: nodeColor }"
       ></div>
+    </div>
+  </div>
+
+  <!-- RESULT НОДА -->
+  <div 
+    v-else-if="isResult"
+    ref="nodeRef"
+    class="relative w-[380px] backdrop-blur-md transition-all flex flex-col group"
+    :class="[
+      isSelected ? 'ring-2 ring-white' : '',
+      isSource ? 'animate-pulse' : ''
+    ]"
+    :style="{ 
+      zIndex: zIndex || 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      border: `2px solid ${isSelected ? nodeColor : nodeColor + '99'}`,
+      borderRadius: '1rem',
+      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none',
+      opacity: isSelected ? '0.95' : '0.7'
+    }"
+    :data-id="nodeId"
+  >
+    <!-- Название ноды - сверху справа -->
+    <div 
+      class="absolute -top-3 right-4 px-2 py-0.5 text-xs font-medium rounded-full z-10"
+      :style="{ backgroundColor: nodeColor, color: '#000' }"
+    >
+      {{ title }}
+    </div>
+    
+    <!-- Input порт (ромб в левом верхнем углу) -->
+    <div 
+      v-if="hasInput"
+      ref="inputPortRef"
+      class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      :style="{ 
+        backgroundColor: hasInputConnection ? nodeColor : '#18181b',
+        border: `2px solid ${nodeColor}`
+      }"
+      :data-port="'input'"
+      data-idx="0"
+      :data-type="inputType"
+      @click.stop="onInputClick"
+    >
+    </div>
+
+    <!-- Промпт предпросмотр -->
+    <div class="px-4 pt-5 pb-4">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-xs text-zinc-500 uppercase tracking-wider">итоговый промпт</div>
+        
+        <!-- Свитч режима -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-zinc-500">{{ isJsonMode ? 'JSON' : 'Текст' }}</span>
+          <ToggleSwitch 
+            v-model="isJsonMode"
+            class="custom-switch"
+            :pt="{
+              root: { 
+                class: 'w-8 h-4 rounded-lg border-0',
+                style: { backgroundColor: 'rgba(0,0,0,0.3)' }
+              },
+              slider: { 
+                class: 'rounded-md shadow-none',
+                style: { 
+                  backgroundColor: isJsonMode ? nodeColor : 'rgba(255,255,255,0.5)',
+                  borderRadius: '3px',
+                  width: '10px',
+                  height: '10px',
+                  margin: '3px'
+                }
+              }
+            }"
+          />
+        </div>
+      </div>
+      
+      <div v-if="!hasInputConnection" class="text-zinc-500 text-sm py-8 text-center">
+        Подключите композитор...
+      </div>
+      
+      <div v-else-if="!displayPrompt" class="text-zinc-500 text-sm py-8 text-center">
+        Нет данных от композитора
+      </div>
+      
+      <div v-else>
+        <textarea
+          :value="displayPrompt"
+          readonly
+          class="w-full h-32 bg-black/60 rounded-xl p-3 text-sm text-zinc-200 resize-none focus:outline-none font-mono"
+          :style="{ border: `1px solid ${nodeColor}40` }"
+          @pointerdown.stop
+        ></textarea>
+        
+        <!-- Инфо о разрешении -->
+        <div v-if="connectedComposerResolution" class="mt-3 flex items-center gap-2 text-xs text-zinc-400">
+          <i class="pi pi-image"></i>
+          <span>{{ connectedComposerResolution.width }} × {{ connectedComposerResolution.height }}</span>
+        </div>
+        
+        <!-- Кнопка копировать -->
+        <Button 
+          :label="isJsonMode ? 'Копировать JSON' : 'Копировать промпт'"
+          icon="pi pi-copy"
+          size="small"
+          class="w-full mt-3"
+          :style="{ backgroundColor: nodeColor, borderColor: nodeColor, color: '#000' }"
+          @click="copyPrompt"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -354,6 +463,7 @@ const props = defineProps({
   
   // Тип ноды
   isComposer: { type: Boolean, default: false },
+  isResult: { type: Boolean, default: false },
   
   // Для обычной ноды
   tags: { type: Array, default: () => [] },
@@ -362,6 +472,9 @@ const props = defineProps({
   
   // Для композитора
   connectedNodes: { type: Array, default: () => [] },
+  
+  // Для результата
+  composerData: { type: Object, default: null },
   
   // Порты
   hasInput: { type: Boolean, default: false },
@@ -393,9 +506,78 @@ const localEnabledSources = ref(props.modelValue.enabledSources || {})
 const localResolution = ref(props.modelValue.resolution || { width: 1920, height: 1080 })
 const localMasterPrompt = ref(props.modelValue.masterPrompt || '')
 
+// === RESULT ===
+const isJsonMode = ref(props.modelValue.jsonMode || false)
+
+// === REFS для нод и портов ===
+const nodeRef = ref(null)
+const outputPortRef = ref(null)
+const inputPortRef = ref(null)
+
+// === Методы для получения позиций портов ===
+const getOutputPortPosition = () => {
+  const portEl = outputPortRef.value
+  if (!portEl) return null
+  
+  const rect = portEl.getBoundingClientRect()
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2
+  }
+}
+
+const getInputPortPosition = () => {
+  const portEl = inputPortRef.value
+  if (!portEl) return null
+  
+  const rect = portEl.getBoundingClientRect()
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2
+  }
+}
+
+const connectedComposerPrompt = computed(() => {
+  return props.composerData?.prompt || ''
+})
+
+const connectedComposerResolution = computed(() => {
+  return props.composerData?.resolution || null
+})
+
+const displayPrompt = computed(() => {
+  if (!props.composerData) return ''
+  
+  if (isJsonMode.value) {
+    // Формируем JSON с вложенной структурой
+    const json = {
+      prompt: props.composerData.structuredPrompts || [],
+      resolution: connectedComposerResolution.value || { width: 1024, height: 1024 },
+      n: 1,
+      quality: 'high'
+    }
+    return JSON.stringify(json, null, 2)
+  }
+  
+  return connectedComposerPrompt.value
+})
+
+watch(isJsonMode, (val) => {
+  emit('update:modelValue', { ...props.modelValue, jsonMode: val })
+})
+
+const copyPrompt = () => {
+  const textToCopy = displayPrompt.value
+  if (textToCopy) {
+    navigator.clipboard.writeText(textToCopy)
+  }
+}
+
 // Синхронизация
 watch(() => props.modelValue, (newVal) => {
-  if (!props.isComposer) {
+  if (props.isResult) {
+    isJsonMode.value = newVal.jsonMode || false
+  } else if (!props.isComposer) {
     localTags.value = newVal.tags || []
     localDescription.value = newVal.description || ''
   } else {
@@ -530,7 +712,11 @@ const generatePrompt = () => {
   }
 }
 
-defineExpose({ generatePrompt })
+defineExpose({ 
+  generatePrompt, 
+  getOutputPortPosition, 
+  getInputPortPosition 
+})
 </script>
 
 <style scoped>
