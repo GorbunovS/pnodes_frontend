@@ -3,17 +3,19 @@
   <div 
     v-if="!isComposer"
     ref="nodeRef"
-    class="relative w-[320px] backdrop-blur-md transition-all flex flex-col"
+    class="relative w-[320px] backdrop-blur-md transition-all flex flex-col group"
     :class="[
-      isSelected ? 'ring-2 ring-white opacity-75' : 'opacity-100',
+      isSelected ? 'ring-2 ring-white' : '',
       isSource ? 'animate-pulse' : ''
     ]"
+    style="opacity: 0.7"
     :style="{ 
       zIndex: zIndex || 1,
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      border: `2px solid ${nodeColor}`,
+      border: `2px solid ${isSelected ? nodeColor : nodeColor + '99'}`,
       borderRadius: '1rem 1rem 0 1rem',
-      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none'
+      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none',
+      opacity: isSelected ? '0.95' : '0.7'
     }"
     :data-id="nodeId"
   >
@@ -189,7 +191,7 @@
   <div 
     v-else
     ref="nodeRef"
-    class="relative w-[340px] backdrop-blur-md transition-all flex flex-col"
+    class="relative w-[340px] backdrop-blur-md transition-all flex flex-col group"
     :class="[
       isSelected ? 'ring-2 ring-white' : '',
       isSource ? 'animate-pulse' : ''
@@ -197,9 +199,10 @@
     :style="{ 
       zIndex: zIndex || 1,
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      border: `2px solid ${nodeColor}`,
+      border: `2px solid ${isSelected ? nodeColor : nodeColor + '99'}`,
       borderRadius: '1rem',
-      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none'
+      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none',
+      opacity: isSelected ? '0.95' : '0.7'
     }"
     :data-id="nodeId"
   >
@@ -240,6 +243,23 @@
           <ToggleSwitch 
             v-model="source.enabled"
             @change="onSourceToggle"
+            class="custom-switch"
+            :pt="{
+              root: { 
+                class: 'w-10 h-5 rounded-lg border-0',
+                style: { backgroundColor: 'rgba(0,0,0,0.3)' }
+              },
+              slider: { 
+                class: 'rounded-md shadow-none',
+                style: { 
+                  backgroundColor: source.enabled ? '#ffffff' : 'rgba(255,255,255,0.5)',
+                  borderRadius: '4px',
+                  width: '14px',
+                  height: '14px',
+                  margin: '3px'
+                }
+              }
+            }"
           />
         </div>
         
@@ -514,6 +534,41 @@ defineExpose({ generatePrompt })
 </script>
 
 <style scoped>
+[data-id]:hover {
+  opacity: 0.85 !important;
+}
+
+/* Кастомный свитч - трек темнее, тумблер белый прямоугольный */
+:deep(.custom-switch) {
+  background-color: rgba(0, 0, 0, 0.25) !important;
+  border-radius: 8px !important;
+  width: 40px !important;
+  height: 20px !important;
+  border: none !important;
+}
+
+:deep(.custom-switch .p-toggleswitch-slider) {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  border-radius: 4px !important;
+  width: 14px !important;
+  height: 14px !important;
+  top: 3px !important;
+  left: 3px !important;
+  box-shadow: none !important;
+}
+
+:deep(.custom-switch.p-toggleswitch-checked .p-toggleswitch-slider) {
+  background-color: #ffffff !important;
+  transform: translateX(20px) !important;
+}
+
+/* Скрываем стандартный handle (черный круглый) */
+:deep(.custom-switch .p-toggleswitch-handle) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
 }
