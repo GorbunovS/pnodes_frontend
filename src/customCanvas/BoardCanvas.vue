@@ -128,6 +128,7 @@
         :is-composer="node.config?.isComposer ?? false"
         :is-result="node.config?.isResult ?? false"
         :is-character="node.config?.isCharacter ?? false"
+        :is-generation="node.config?.isGeneration ?? false"
         :max-tags="node.config?.maxTags || 5"
         :has-description="node.config?.hasDescription ?? true"
         :has-output="node.config?.hasOutput ?? true"
@@ -142,6 +143,7 @@
         :z-index="node.zIndex"
         :connected-nodes="(node.config?.isComposer || node.type === 'character') ? getConnectedNodes(node.id) : []"
         :composer-data="node.config?.isResult ? getComposerDataForResult(node.id) : null"
+        :input-prompt="node.config?.isGeneration ? getPromptForGeneration(node.id) : ''"
         v-model="node.data"
         @port-click="handlePortClick"
         @port-mouse-down="handlePortMouseDown"
@@ -355,6 +357,43 @@ const getComposerDataForResult = (resultNodeId) => {
     structuredPrompts: resultStructure,
     resolution
   }
+}
+
+// Получить промпт для generation ноды из подключенной ноды
+const getPromptForGeneration = (generationNodeId) => {
+  const connection = store.connections.find(c => c.toNodeId === generationNodeId)
+  if (!connection) return ''
+  
+  const fromNode = store.getNodeById(connection.fromNodeId)
+  if (!fromNode) return ''
+  
+  // Если подключен композитор, берем его полный промпт
+  if (fromNode.config?.isComposer) {
+    const composerData = getComposerDataForResult(generationNodeId)
+    return composerData?.prompt || ''
+  }
+  
+  // Для character ноды
+  if (fromNode.type === 'character') {
+    const charData = fromNode.data
+    const basePrompt = charData?.prompt || ''
+    const enabledParts = charData?.enabledParts || {}
+    const description = charData?.description || ''
+    
+    // Собираем части лица
+    const faceParts = getConnectedNodes(fromNode.id)
+    const partsPrompts = faceParts
+      .filter(part => enabledParts[part.nodeId] !== false)
+      .map(part => part.prompt)
+      .filter(Boolean)
+    
+    return [basePrompt, ...partsPrompts, description].filter(Boolean).join(', ')
+  }
+  
+  // Для обычных нод с тегами
+  const tagsPrompt = fromNode.data?.tags?.map(t => t.prompt).join(', ') || ''
+  const description = fromNode.data?.description || ''
+  return [tagsPrompt, description].filter(Boolean).join(', ')
 }
 
 const getConnectionColor = (conn) => {

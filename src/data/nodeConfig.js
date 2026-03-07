@@ -52,8 +52,9 @@ const rankMap = {
   // Ранг 4: Композитор
   composer: RANKS.COMPOSER,
   
-  // Ранг 5: Результат
-  result: RANKS.OUTPUT
+  // Ранг 5: Результат и генерация
+  result: RANKS.OUTPUT,
+  generation: RANKS.OUTPUT
 }
 
 // Получить ранг типа
@@ -76,7 +77,8 @@ export const nodeTypes = {
   PHOTO: 'photo',
   VIDEO: 'video',
   COMPOSER: 'composer',
-  RESULT: 'result'
+  RESULT: 'result',
+  GENERATION: 'generation'
 }
 
 // === КАТЕГОРИИ ДЛЯ UI ===
@@ -128,8 +130,7 @@ export const nodeCategories = {
     name: 'Генерация',
     icon: 'pi pi-sparkles',
     color: '#6ee7b7', // мятный
-    types: [nodeTypes.PHOTO, nodeTypes.VIDEO],
-    disabled: true // Пока не готово
+    types: [nodeTypes.PHOTO, nodeTypes.VIDEO, nodeTypes.GENERATION]
   }
 }
 
@@ -149,7 +150,8 @@ export const connectionRules = {
   [nodeTypes.HAIR]: [nodeTypes.CHARACTER],
   [nodeTypes.PHOTO]: [nodeTypes.COMPOSER],
   [nodeTypes.VIDEO]: [nodeTypes.COMPOSER],
-  [nodeTypes.COMPOSER]: [nodeTypes.RESULT]
+  [nodeTypes.COMPOSER]: [nodeTypes.RESULT, nodeTypes.GENERATION],
+  [nodeTypes.GENERATION]: [] // Output node - no outgoing connections
 }
 
 // === ПРОВЕРКА СОЕДИНЕНИЯ ===
@@ -505,6 +507,21 @@ export const nodeConfigs = {
     hasOutput: false,
     maxTags: 0,
     isResult: true
+  },
+  
+  [nodeTypes.GENERATION]: {
+    name: 'Генерация',
+    type: nodeTypes.GENERATION,
+    category: 'generation',
+    icon: 'pi pi-sparkles',
+    color: '#10b981', // emerald-500
+    hasInput: true,
+    acceptsFrom: [nodeTypes.COMPOSER, nodeTypes.CHARACTER, nodeTypes.LIGHTING, nodeTypes.ENVIRONMENT, nodeTypes.CAMERA, nodeTypes.STYLE, nodeTypes.MOOD],
+    acceptAnyInput: true, // Может принимать от любой ноды с промптом
+    hasOutput: false,
+    hasDescription: true,
+    isGeneration: true, // Флаг для UI
+    maxTags: 0
   }
 }
 

@@ -684,6 +684,206 @@
       </div>
     </div>
   </div>
+
+  <!-- GENERATION НОДА -->
+  <div 
+    v-else-if="isGeneration"
+    ref="nodeRef"
+    class="relative w-[400px] backdrop-blur-md transition-all flex flex-col group"
+    :class="[
+      isSelected ? 'ring-2 ring-white' : '',
+      isSource ? 'animate-pulse' : ''
+    ]"
+    :style="{ 
+      zIndex: zIndex || 1,
+      backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.3)',
+      border: `2px solid ${isSelected ? nodeColor : nodeColor + '99'}`,
+      borderRadius: '1rem',
+      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none'
+    }"
+    :data-id="nodeId"
+  >
+    <!-- Название ноды - сверху справа -->
+    <div 
+      class="absolute -top-3 right-4 px-2 py-0.5 text-xs font-medium rounded-full z-10"
+      :style="{ backgroundColor: nodeColor, color: '#000' }"
+    >
+      {{ title }}
+    </div>
+    
+    <!-- Input порт (ромб в левом верхнем углу) -->
+    <div 
+      v-if="hasInput"
+      ref="inputPortRef"
+      class="absolute -left-3 -top-3 w-6 h-6 cursor-crosshair flex items-center justify-center transition-all duration-200 ease-out hover:scale-125 hover:shadow-lg"
+      :class="{ 'input-pulse': isInputCompatible }"
+      :style="{ 
+        backgroundColor: hasInputConnection ? nodeColor : '#18181b',
+        border: `2px solid ${isInputCompatible ? pulseColor : nodeColor}`,
+        opacity: '1',
+        boxShadow: isInputCompatible ? `0 0 15px ${pulseColor}, 0 0 30px ${pulseColor}80` : 'none'
+      }"
+      :data-port="'input'"
+      data-idx="0"
+      :data-type="inputType"
+      @click.stop="onInputClick"
+      @dblclick.stop="onInputDblClick"
+    >
+    </div>
+
+    <!-- Контент ноды генерации -->
+    <div class="px-4 pt-5 pb-4">
+      <!-- Заголовок секции -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-xs text-zinc-500 uppercase tracking-wider">Генерация изображения</div>
+        <Tag 
+          v-if="generationStatus" 
+          :value="generationStatusText"
+          :severity="generationStatusSeverity"
+          class="text-xs"
+        />
+      </div>
+
+      <!-- Выбор провайдера -->
+      <div class="mb-4">
+        <label class="text-xs text-zinc-400 mb-1.5 block">Провайдер</label>
+        <Select
+          v-model="selectedProviderId"
+          :options="availableProviders"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Выберите провайдера"
+          class="w-full"
+          :pt="{
+            root: { class: '!bg-zinc-800 !border-zinc-700' },
+            input: { class: '!text-white' },
+            panel: { class: '!bg-zinc-800 !border-zinc-700' },
+            item: { class: '!text-white hover:!bg-zinc-700' }
+          }"
+          @focus="onInputFocus"
+          @blur="onInputBlur"
+        />
+        
+        <!-- Предупреждение если нет подключенных провайдеров -->
+        <div v-if="availableProviders.length === 0" class="mt-2 text-xs text-amber-400">
+          <i class="pi pi-exclamation-triangle mr-1"></i>
+          Нет подключённых провайдеров. 
+          <a href="#/profile" class="underline hover:text-amber-300">Добавить в профиле</a>
+        </div>
+      </div>
+
+      <!-- Промпт preview (readonly) -->
+      <div class="mb-4">
+        <label class="text-xs text-zinc-400 mb-1.5 block">Промпт</label>
+        <Textarea
+          :value="inputPrompt"
+          readonly
+          :rows="3"
+          class="w-full"
+          :pt="{
+            root: { class: '!bg-black/50 !border-zinc-700 !text-zinc-400 text-sm' }
+          }"
+          placeholder="Подключите ноду с промптом..."
+        />
+      </div>
+
+      <!-- Опции генерации (если провайдер выбран) -->
+      <div v-if="selectedProviderConfig" class="mb-4 space-y-3">
+        <div class="text-xs text-zinc-500 uppercase tracking-wider">Настройки</div>
+        
+        <!-- Aspect Ratio -->
+        <div v-if="selectedProviderConfig.supportedOptions?.aspectRatio">
+          <label class="text-xs text-zinc-400 mb-1 block">Соотношение сторон</label>
+          <Select
+            v-model="generationOptions.aspectRatio"
+            :options="selectedProviderConfig.supportedOptions.aspectRatio"
+            class="w-full"
+            :pt="{
+              root: { class: '!bg-zinc-800 !border-zinc-700' },
+              input: { class: '!text-white text-sm' }
+            }"
+          />
+        </div>
+
+        <!-- Quality -->
+        <div v-if="selectedProviderConfig.supportedOptions?.quality">
+          <label class="text-xs text-zinc-400 mb-1 block">Качество</label>
+          <Select
+            v-model="generationOptions.quality"
+            :options="selectedProviderConfig.supportedOptions.quality"
+            class="w-full"
+            :pt="{
+              root: { class: '!bg-zinc-800 !border-zinc-700' },
+              input: { class: '!text-white text-sm' }
+            }"
+          />
+        </div>
+
+        <!-- Size/Resolution -->
+        <div v-if="selectedProviderConfig.supportedOptions?.size" class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-xs text-zinc-400 mb-1 block">Размер</label>
+            <Select
+              v-model="generationOptions.size"
+              :options="selectedProviderConfig.supportedOptions.size"
+              class="w-full"
+              :pt="{
+                root: { class: '!bg-zinc-800 !border-zinc-700' },
+                input: { class: '!text-white text-sm' }
+              }"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Кнопка генерации -->
+      <Button
+        :label="generationButtonText"
+        :icon="generationButtonIcon"
+        :loading="isGenerating"
+        :disabled="!canGenerate"
+        class="w-full"
+        :style="{ backgroundColor: nodeColor, borderColor: nodeColor, color: '#000' }"
+        @click="onGenerate"
+      />
+
+      <!-- Результат -->
+      <div v-if="generationResult" class="mt-4">
+        <div class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Результат</div>
+        <div class="relative rounded-xl overflow-hidden bg-zinc-900">
+          <img 
+            :src="generationResult.imageUrl" 
+            class="w-full h-auto max-h-64 object-contain"
+            alt="Generated"
+          />
+          <div class="absolute bottom-2 right-2 flex gap-2">
+            <Button
+              icon="pi pi-download"
+              size="small"
+              text
+              severity="secondary"
+              @click="downloadImage"
+            />
+            <Button
+              icon="pi pi-external-link"
+              size="small"
+              text
+              severity="secondary"
+              @click="openImage"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Ошибка -->
+      <div v-if="generationError" class="mt-4 bg-red-900/30 border border-red-700 rounded-lg p-3">
+        <div class="flex items-center gap-2 text-red-400 text-sm">
+          <i class="pi pi-exclamation-circle"></i>
+          <span>{{ generationError }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -695,8 +895,11 @@ import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Textarea from 'primevue/textarea'
+import Tag from 'primevue/tag'
 import { useBoardStore } from '../store/boardStore.js'
+import { useGenerationStore } from '../store/generationStore.js'
 import { canConnect } from '../data/nodeConfig.js'
+import { getProviderConfig, getDefaultOptions } from '../data/providersConfig.js'
 import { useMotion } from '@vueuse/motion'
 
 const props = defineProps({
@@ -715,6 +918,7 @@ const props = defineProps({
   isComposer: { type: Boolean, default: false },
   isResult: { type: Boolean, default: false },
   isCharacter: { type: Boolean, default: false },
+  isGeneration: { type: Boolean, default: false },
   
   // Для обычной ноды
   tags: { type: Array, default: () => [] },
@@ -726,6 +930,9 @@ const props = defineProps({
   
   // Для результата
   composerData: { type: Object, default: null },
+  
+  // Для generation
+  inputPrompt: { type: String, default: '' },
   
   // Порты
   hasInput: { type: Boolean, default: false },
@@ -772,6 +979,131 @@ const pulseColor = computed(() => store.activeSource?.color || props.nodeColor)
 
 // === ОБЩИЕ ДАННЫЕ (для всех нод) ===
 const localDescription = ref(props.modelValue.description || '')
+
+// === GENERATION STORE & DATA ===
+const generationStore = useGenerationStore()
+const selectedProviderId = ref(props.modelValue.selectedProvider || '')
+const generationOptions = ref(props.modelValue.generationOptions || {})
+const generationResult = ref(props.modelValue.generationResult || null)
+const generationStatus = ref(props.modelValue.generationStatus || 'idle') // idle, pending, processing, completed, failed
+const generationError = ref(props.modelValue.generationError || null)
+const inputPrompt = ref(props.modelValue.inputPrompt || '')
+
+// Данные для generation ноды
+const availableProviders = computed(() => generationStore.getConnectedProviders)
+const selectedProviderConfig = computed(() => {
+  if (!selectedProviderId.value) return null
+  return getProviderConfig(selectedProviderId.value)
+})
+
+const isGenerating = computed(() => generationStore.isGenerating)
+
+const generationStatusText = computed(() => {
+  switch (generationStatus.value) {
+    case 'pending': return 'В очереди'
+    case 'processing': return 'Генерация...'
+    case 'completed': return 'Готово'
+    case 'failed': return 'Ошибка'
+    default: return ''
+  }
+})
+
+const generationStatusSeverity = computed(() => {
+  switch (generationStatus.value) {
+    case 'completed': return 'success'
+    case 'failed': return 'error'
+    case 'processing': return 'warning'
+    case 'pending': return 'info'
+    default: return 'secondary'
+  }
+})
+
+const generationButtonText = computed(() => {
+  if (isGenerating.value) return 'Генерация...'
+  if (generationStatus.value === 'completed') return 'Сгенерировать снова'
+  return 'Сгенерировать'
+})
+
+const generationButtonIcon = computed(() => {
+  if (isGenerating.value) return 'pi pi-spinner pi-spin'
+  return 'pi pi-sparkles'
+})
+
+const canGenerate = computed(() => {
+  return selectedProviderId.value && 
+         inputPrompt.value && 
+         !isGenerating.value &&
+         availableProviders.value.length > 0
+})
+
+// Инициализация дефолтных опций при смене провайдера
+watch(selectedProviderId, (newId) => {
+  if (newId) {
+    const defaults = getDefaultOptions(newId)
+    generationOptions.value = { ...defaults, ...generationOptions.value }
+  }
+}, { immediate: true })
+
+// Обновление промпта из входящего соединения
+watch(() => props.inputPrompt, (newPrompt) => {
+  if (newPrompt !== undefined && newPrompt !== inputPrompt.value) {
+    inputPrompt.value = newPrompt
+  }
+}, { immediate: true })
+
+// Синхронизация данных generation
+watch([selectedProviderId, generationOptions, generationResult, generationStatus, generationError, inputPrompt], () => {
+  if (props.isGeneration) {
+    emit('update:modelValue', {
+      ...props.modelValue,
+      selectedProvider: selectedProviderId.value,
+      generationOptions: generationOptions.value,
+      generationResult: generationResult.value,
+      generationStatus: generationStatus.value,
+      generationError: generationError.value,
+      inputPrompt: inputPrompt.value
+    })
+  }
+}, { deep: true })
+
+const onGenerate = async () => {
+  if (!canGenerate.value) return
+  
+  generationStatus.value = 'processing'
+  generationError.value = null
+  
+  try {
+    const task = await generationStore.generateImage(
+      selectedProviderId.value,
+      inputPrompt.value,
+      generationOptions.value
+    )
+    
+    generationResult.value = {
+      imageUrl: task.imageUrl,
+      taskId: task.id,
+      createdAt: task.createdAt
+    }
+    generationStatus.value = 'completed'
+  } catch (error) {
+    generationError.value = error.message
+    generationStatus.value = 'failed'
+  }
+}
+
+const downloadImage = () => {
+  if (!generationResult.value?.imageUrl) return
+  const link = document.createElement('a')
+  link.href = generationResult.value.imageUrl
+  link.download = `generated-${Date.now()}.png`
+  link.target = '_blank'
+  link.click()
+}
+
+const openImage = () => {
+  if (!generationResult.value?.imageUrl) return
+  window.open(generationResult.value.imageUrl, '_blank')
+}
 
 // === ДАННЫЕ ПЕРСОНАЖА ===
 const characterGender = ref(props.modelValue.gender || 'male')
