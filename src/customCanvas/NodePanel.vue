@@ -23,6 +23,7 @@
           <Button
             v-if="searchQuery"
             icon="pi pi-times"
+            severity="danger"
             text
             size="small"
             class="!absolute right-1 top-1/2 -translate-y-1/2 !p-1 !w-6 !h-6"
@@ -179,12 +180,14 @@
             <span class="text-xs font-medium text-zinc-400">
               {{ getSelectedCategoryName }}
             </span>
-            <button 
-              class="text-zinc-500 hover:text-zinc-300 text-xs"
+            <Button 
+              icon="pi pi-times"
+              severity="danger"
+              text
+              size="small"
+              class="!p-1 !w-6 !h-6"
               @click="selectedCategory = null"
-            >
-              <i class="pi pi-times"></i>
-            </button>
+            />
           </div>
 
           <div 
