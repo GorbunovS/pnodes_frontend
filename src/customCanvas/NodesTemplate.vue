@@ -817,8 +817,8 @@
         />
       </div>
 
-      <!-- Опции генерации (если провайдер выбран) -->
-      <div v-if="selectedProviderConfig" class="mb-4 space-y-3">
+      <!-- Опции генерации (если провайдер выбран и есть опции) -->
+      <div v-if="hasGenerationOptions" class="mb-4 space-y-3">
         <div class="text-xs text-zinc-500 uppercase tracking-wider">Настройки</div>
         
         <!-- Aspect Ratio -->
@@ -864,6 +864,31 @@
             />
           </div>
         </div>
+      </div>
+
+      <!-- Отправка JSON промпта -->
+      <div class="mb-4 flex items-center justify-between">
+        <label class="text-xs text-zinc-400">Отправить как JSON</label>
+        <ToggleSwitch 
+          v-model="useJsonPrompt"
+          class="custom-switch"
+          :pt="{
+            root: { 
+              class: 'w-8 h-4 rounded-lg border-0',
+              style: { backgroundColor: 'rgba(0,0,0,0.3)' }
+            },
+            slider: { 
+              class: 'rounded-md shadow-none',
+              style: { 
+                backgroundColor: useJsonPrompt ? nodeColor : 'rgba(255,255,255,0.5)',
+                borderRadius: '3px',
+                width: '10px',
+                height: '10px',
+                margin: '3px'
+              }
+            }
+          }"
+        />
       </div>
 
       <!-- Кнопка генерации -->
@@ -1018,6 +1043,7 @@ const generationResult = ref(props.modelValue.generationResult || null)
 const generationStatus = ref(props.modelValue.generationStatus || 'idle') // idle, pending, processing, completed, failed
 const generationError = ref(props.modelValue.generationError || null)
 const inputPrompt = ref(props.modelValue.inputPrompt || '')
+const useJsonPrompt = ref(props.modelValue.useJsonPrompt || false)
 
 // Данные для generation ноды
 const availableProviders = computed(() => generationStore.getConnectedProviders)
@@ -1060,35 +1086,56 @@ const generationButtonIcon = computed(() => {
 })
 
 const canGenerate = computed(() => {
+  // Используем generationPrompt (всегда текст из composerData)
   return selectedProviderId.value && 
-         inputPrompt.value && 
+         generationPrompt.value && 
          !isGenerating.value &&
          availableProviders.value.length > 0
+})
+
+const hasGenerationOptions = computed(() => {
+  if (!selectedProviderConfig.value) return false
+  const opts = selectedProviderConfig.value.supportedOptions
+  return opts && Object.keys(opts).length > 0
 })
 
 // Режим отображения промпта (JSON/Текст)
 const isJsonMode = ref(props.modelValue.jsonMode || false)
 
-// Отображаемый промпт (текст или JSON)
+// Промпт для генерации (текст или JSON в зависимости от настройки)
+const generationPrompt = computed(() => {
+  if (props.isGeneration) {
+    if (useJsonPrompt.value && props.composerData?.structuredPrompts) {
+      // Отправляем экранированный JSON
+      return JSON.stringify(props.composerData.structuredPrompts)
+    }
+    return props.composerData?.prompt || ''
+  }
+  return inputPrompt.value
+})
+
+// Отображаемый промпт (текст или JSON) - как в Result ноде
 const displayPrompt = computed(() => {
-  if (!inputPrompt.value) return ''
+  if (!props.composerData) return ''
   
   if (isJsonMode.value) {
-    // Формируем JSON структуру как в композиторе
-    return JSON.stringify({
-      prompt: inputPrompt.value,
-      provider: selectedProviderId.value,
-      options: generationOptions.value
-    }, null, 2)
+    return JSON.stringify(props.composerData.structuredPrompts || {}, null, 2)
   }
   
-  return inputPrompt.value
+  return props.composerData.prompt || ''
 })
 
 // Синхронизация isJsonMode
 watch(isJsonMode, (val) => {
   if (props.isGeneration) {
     emit('update:modelValue', { ...props.modelValue, jsonMode: val })
+  }
+})
+
+// Синхронизация useJsonPrompt
+watch(useJsonPrompt, (val) => {
+  if (props.isGeneration) {
+    emit('update:modelValue', { ...props.modelValue, useJsonPrompt: val })
   }
 })
 
@@ -1108,7 +1155,7 @@ watch(() => props.inputPrompt, (newPrompt) => {
 }, { immediate: true })
 
 // Синхронизация данных generation
-watch([selectedProviderId, generationOptions, generationResult, generationStatus, generationError, inputPrompt], () => {
+watch([selectedProviderId, generationOptions, generationResult, generationStatus, generationError, inputPrompt, useJsonPrompt], () => {
   if (props.isGeneration) {
     emit('update:modelValue', {
       ...props.modelValue,
@@ -1117,7 +1164,8 @@ watch([selectedProviderId, generationOptions, generationResult, generationStatus
       generationResult: generationResult.value,
       generationStatus: generationStatus.value,
       generationError: generationError.value,
-      inputPrompt: inputPrompt.value
+      inputPrompt: inputPrompt.value,
+      useJsonPrompt: useJsonPrompt.value
     })
   }
 }, { deep: true })
@@ -1131,7 +1179,7 @@ const onGenerate = async () => {
   try {
     const task = await generationStore.generateImage(
       selectedProviderId.value,
-      inputPrompt.value,
+      generationPrompt.value,
       generationOptions.value
     )
     
@@ -1390,6 +1438,7 @@ watch(() => props.modelValue, (newVal) => {
     isResultJsonMode.value = newVal.isResultJsonMode || false
   } else if (props.isGeneration) {
     isJsonMode.value = newVal.jsonMode || false
+    useJsonPrompt.value = newVal.useJsonPrompt || false
   } else if (props.isCharacter) {
     // Для персонажа localDescription синхронизируется отдельным watch
     characterGender.value = newVal.gender || 'male'

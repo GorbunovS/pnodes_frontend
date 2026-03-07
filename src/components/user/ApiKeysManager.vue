@@ -98,8 +98,8 @@ const testConnection = async () => {
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h3 class="text-xl font-semibold text-white">API Подключения</h3>
-        <p class="text-zinc-400 text-sm mt-1">
+        <h3 class="text-2xl text-white" style="font-family: 'SoyuzGroteskBold', sans-serif;">API Подключения</h3>
+        <p class="text-zinc-400 text-sm mt-1" style="font-family: 'Inter', sans-serif;">
           Настройте подключения к AI сервисам для генерации изображений
         </p>
       </div>
@@ -107,7 +107,7 @@ const testConnection = async () => {
 
     <!-- Connected Providers -->
     <div v-if="connectedProviders.length > 0" class="mb-8">
-      <h4 class="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">
+      <h4 class="text-sm text-zinc-500 uppercase tracking-wider mb-4" style="font-family: 'SoyuzGroteskBold', sans-serif;">
         Подключённые сервисы
       </h4>
       
@@ -126,13 +126,13 @@ const testConnection = async () => {
           
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <span class="font-medium text-white">{{ provider.name }}</span>
+              <span class="text-white text-lg" style="font-family: 'SoyuzGroteskBold', sans-serif;">{{ provider.name }}</span>
               <Tag severity="success" value="Подключено" class="text-xs" />
             </div>
-            <p class="text-zinc-400 text-sm mt-1">
+            <p class="text-zinc-400 text-sm mt-1" style="font-family: 'Inter', sans-serif;">
               {{ provider.settings.apiKey ? '••••' + provider.settings.apiKey.slice(-4) : 'Custom endpoint' }}
             </p>
-            <p v-if="provider.settings.model" class="text-zinc-500 text-xs mt-1">
+            <p v-if="provider.settings.model" class="text-zinc-500 text-xs mt-1" style="font-family: 'Inter', sans-serif;">
               {{ provider.settings.model }}
             </p>
           </div>
@@ -161,7 +161,7 @@ const testConnection = async () => {
 
     <!-- Available Providers -->
     <div>
-      <h4 class="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">
+      <h4 class="text-sm text-zinc-500 uppercase tracking-wider mb-4" style="font-family: 'SoyuzGroteskBold', sans-serif;">
         Доступные сервисы
       </h4>
       
@@ -169,10 +169,23 @@ const testConnection = async () => {
         <div 
           v-for="provider in providers" 
           :key="provider.id"
-          class="bg-zinc-900/30 border border-zinc-800 rounded-xl p-4 hover:border-zinc-600 transition-colors cursor-pointer group"
-          :class="{ 'opacity-50': store.isProviderConnected(provider.id) }"
-          @click="!store.isProviderConnected(provider.id) && openAddDialog(provider)"
+          class="bg-zinc-900/30 border border-zinc-800 rounded-xl p-4 transition-colors group relative"
+          :class="{ 
+            'opacity-50 cursor-not-allowed': provider.disabled,
+            'hover:border-zinc-600 cursor-pointer': !provider.disabled && !store.isProviderConnected(provider.id),
+            'opacity-50': store.isProviderConnected(provider.id)
+          }"
+          @click="!provider.disabled && !store.isProviderConnected(provider.id) && openAddDialog(provider)"
         >
+          <!-- Badge "СКОРО" для disabled провайдеров -->
+          <div 
+            v-if="provider.disabled" 
+            class="absolute -top-2 -right-2 bg-amber-600 text-white text-[10px] px-2 py-0.5 rounded-full uppercase font-bold"
+            style="font-family: 'Inter', sans-serif;"
+          >
+            СКОРО
+          </div>
+          
           <div class="flex items-start gap-3">
             <div 
               class="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
@@ -183,17 +196,17 @@ const testConnection = async () => {
             
             <div class="flex-1">
               <div class="flex items-center gap-2">
-                <span class="font-medium text-white">{{ provider.name }}</span>
+                <span class="text-white" style="font-family: 'SoyuzGroteskBold', sans-serif;">{{ provider.name }}</span>
                 <i v-if="store.isProviderConnected(provider.id)" class="pi pi-check-circle text-green-500 text-sm"></i>
               </div>
-              <p class="text-zinc-400 text-xs mt-1 line-clamp-2">
+              <p class="text-zinc-400 text-xs mt-1 line-clamp-2" style="font-family: 'Inter', sans-serif;">
                 {{ provider.description }}
               </p>
             </div>
           </div>
           
           <div class="mt-3 pt-3 border-t border-zinc-800">
-            <span class="text-xs text-zinc-500">
+            <span class="text-xs text-zinc-500" style="font-family: 'Inter', sans-serif;">
               <i class="pi pi-key mr-1"></i>
               {{ provider.requiresApiKey ? 'Требуется API ключ' : 'Без API ключа' }}
             </span>

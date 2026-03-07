@@ -201,8 +201,8 @@ export const useGenerationStore = defineStore('generation', () => {
     }
   }
   
-  // OpenRouter генерация
-  const generateOpenRouter = async (task, settings) => {
+  // OpenRouter Text генерация (чат/текстовые модели)
+  const generateOpenRouterText = async (task, settings) => {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -233,6 +233,146 @@ export const useGenerationStore = defineStore('generation', () => {
     return {
       textResponse: data.choices[0]?.message?.content,
       model: data.model
+    }
+  }
+  
+  // OpenRouter Images генерация через chat completions с modalities
+  const generateOpenRouterImages = async (task, settings) => {
+    // Фикс: заменяем старый неверный ID на правильный
+    let modelId = settings.model || 'bytedance-seed/seedream-4.5'
+    if (modelId === 'bytedance/seedream-4.5') {
+      modelId = 'bytedance-seed/seedream-4.5'
+    }
+    
+    console.log('[OpenRouter Images] Starting generation with model:', modelId)
+    console.log('[OpenRouter Images] Prompt:', task.prompt.substring(0, 100) + '...')
+    
+    // Контроллер для таймаута
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 минуты таймаут
+    
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Authorization': `Bearer ${settings.apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'PNodes Generator'
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [
+            {
+              role: 'user',
+              content: task.prompt
+            }
+          ],
+          modalities: ['image']
+        })
+      })
+      
+      clearTimeout(timeoutId)
+      console.log('[OpenRouter Images] Response status:', response.status, response.statusText)
+      
+      if (!response.ok) {
+        const responseText = await response.text()
+        console.error('[OpenRouter Images] Error response:', responseText.substring(0, 500))
+        
+        let errorMessage = `OpenRouter API error: ${response.status} ${response.statusText}`
+        
+        try {
+          const errorJson = JSON.parse(responseText)
+          errorMessage = errorJson.error?.message || errorJson.message || errorMessage
+          console.error('[OpenRouter Images] Parsed error:', errorJson)
+        } catch (e) {
+          if (responseText.includes('<!DOCTYPE')) {
+            errorMessage = `OpenRouter returned HTML: ${response.status}. The model may not support image generation.`
+          }
+        }
+        
+        throw new Error(errorMessage)
+      }
+      
+      const data = await response.json()
+      console.log('[OpenRouter Images] Full response:', JSON.stringify(data, null, 2))
+      
+      // Извлекаем URL изображения - проверяем разные форматы
+      let imageUrl = null
+      
+      if (data.choices && data.choices[0]) {
+        const message = data.choices[0].message
+        console.log('[OpenRouter Images] Message:', message)
+        
+        // Формат 1: choices[0].message.images[0].image_url.url (Seedream и др.)
+        if (message.images && message.images.length > 0) {
+          const img = message.images[0]
+          if (img.image_url && img.image_url.url) {
+            imageUrl = img.image_url.url
+            console.log('[OpenRouter Images] Found in images[0].image_url.url:', imageUrl.substring(0, 100))
+          } else if (img.url) {
+            imageUrl = img.url
+            console.log('[OpenRouter Images] Found in images[0].url')
+          }
+        }
+        
+        // Формат 2: choices[0].message.image_url (стандарт OpenAI)
+        if (!imageUrl && message.image_url) {
+          imageUrl = message.image_url.url || message.image_url
+          console.log('[OpenRouter Images] Found image_url:', imageUrl.substring(0, 100))
+        }
+        
+        // Формат 3: content с base64 или URL
+        if (!imageUrl && message.content) {
+          console.log('[OpenRouter Images] Content:', message.content.substring(0, 200))
+          if (message.content.startsWith('http')) {
+            imageUrl = message.content
+          } else if (message.content.startsWith('data:image')) {
+            imageUrl = message.content
+          }
+        }
+        
+        // Формат 4: content как JSON с изображением
+        if (!imageUrl && message.content) {
+          try {
+            const contentJson = JSON.parse(message.content)
+            if (contentJson.image_url) imageUrl = contentJson.image_url
+            if (contentJson.url) imageUrl = contentJson.url
+          } catch (e) {
+            // Не JSON
+          }
+        }
+      }
+      
+      // Формат 5: data[0].url (альтернативный)
+      if (!imageUrl && data.data && data.data[0]) {
+        imageUrl = data.data[0].url || data.data[0].b64_json
+        console.log('[OpenRouter Images] Found in data[0]:', imageUrl ? 'yes' : 'no')
+      }
+      
+      // Формат 6: images массив на корневом уровне
+      if (!imageUrl && data.images && data.images[0]) {
+        imageUrl = data.images[0].url || data.images[0]
+        console.log('[OpenRouter Images] Found in root images array')
+      }
+      
+      if (!imageUrl) {
+        console.warn('[OpenRouter Images] No image URL found. Available fields:', Object.keys(data))
+        throw new Error('Image URL not found in response. Check console for full response structure.')
+      }
+      
+      return {
+        imageUrl: imageUrl,
+        revisedPrompt: data.choices?.[0]?.message?.content
+      }
+      
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout (2 minutes). The model may be overloaded.')
+      }
+      throw error
     }
   }
   
@@ -314,8 +454,12 @@ export const useGenerationStore = defineStore('generation', () => {
           result = await generateGoogle(task, provider.apiKey)
           break
           
-        case providerTypes.OPENROUTER:
-          result = await generateOpenRouter(task, provider)
+        case providerTypes.OPENROUTER_TEXT:
+          result = await generateOpenRouterText(task, provider)
+          break
+          
+        case providerTypes.OPENROUTER_IMAGES:
+          result = await generateOpenRouterImages(task, provider)
           break
           
         case providerTypes.CUSTOM:
@@ -343,6 +487,14 @@ export const useGenerationStore = defineStore('generation', () => {
       return task
       
     } catch (error) {
+      console.error('[Generation] Task failed:', {
+        taskId: task.id,
+        provider: providerId,
+        model: provider.model,
+        error: error.message,
+        stack: error.stack
+      })
+      
       updateTask(task.id, {
         status: 'failed',
         error: error.message,
@@ -406,6 +558,14 @@ export const useGenerationStore = defineStore('generation', () => {
         apiKeys.value = parsed.apiKeys || {}
         generationHistory.value = parsed.generationHistory || []
         generationTasks.value = parsed.generationTasks || []
+        
+        // Миграция: исправляем старый неверный ID модели на правильный
+        for (const [providerId, settings] of Object.entries(apiKeys.value)) {
+          if (settings.model === 'bytedance/seedream-4.5') {
+            console.log('[Migration] Fixing model ID for', providerId)
+            settings.model = 'bytedance-seed/seedream-4.5'
+          }
+        }
       }
     } catch (e) {
       console.error('Failed to load generation store:', e)

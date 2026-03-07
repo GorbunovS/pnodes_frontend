@@ -142,7 +142,7 @@
         :is-source="isSourceNode(node.id)"
         :z-index="node.zIndex"
         :connected-nodes="(node.config?.isComposer || node.type === 'character') ? getConnectedNodes(node.id) : []"
-        :composer-data="node.config?.isResult ? getComposerDataForResult(node.id) : null"
+        :composer-data="node.config?.isResult ? getComposerDataForResult(node.id) : (node.config?.isGeneration ? getComposerDataForGeneration(node.id) : null)"
         :input-prompt="node.config?.isGeneration ? getPromptForGeneration(node.id) : ''"
         v-model="node.data"
         @port-click="handlePortClick"
@@ -308,7 +308,7 @@ const getComposerDataForResult = (resultNodeId) => {
   
   // Собираем данные из композитора
   const enabledSources = composerNode.data?.enabledSources || {}
-  const resolution = composerNode.data?.resolution || { width: 1024, height: 1024 }
+  const resolution = composerNode.data?.resolution || { width: 1920, height: 1080 }
   const masterPrompt = composerNode.data?.masterPrompt || ''
   const composerDescription = composerNode.data?.description || ''
   
@@ -369,7 +369,7 @@ const getPromptForGeneration = (generationNodeId) => {
   
   // Если подключен композитор, берем его полный промпт
   if (fromNode.config?.isComposer) {
-    const composerData = getComposerDataForResult(generationNodeId)
+    const composerData = getComposerDataForResult(fromNode.id)
     return composerData?.prompt || ''
   }
   
@@ -394,6 +394,62 @@ const getPromptForGeneration = (generationNodeId) => {
   const tagsPrompt = fromNode.data?.tags?.map(t => t.prompt).join(', ') || ''
   const description = fromNode.data?.description || ''
   return [tagsPrompt, description].filter(Boolean).join(', ')
+}
+
+// Получить composerData для Generation ноды (через подключенный композитор)
+const getComposerDataForGeneration = (generationNodeId) => {
+  const connection = store.connections.find(c => c.toNodeId === generationNodeId)
+  if (!connection) return null
+  
+  const composerNode = store.getNodeById(connection.fromNodeId)
+  if (!composerNode || !composerNode.config?.isComposer) return null
+  
+  // Собираем данные напрямую из композитора (как в getComposerDataForResult, но без поиска соединения)
+  const enabledSources = composerNode.data?.enabledSources || {}
+  const resolution = composerNode.data?.resolution || { width: 1920, height: 1080 }
+  const masterPrompt = composerNode.data?.masterPrompt || ''
+  const composerDescription = composerNode.data?.description || ''
+  
+  // Получаем подключенные ноды композитора
+  const sourceNodes = getConnectedNodes(composerNode.id)
+  const enabledNodes = sourceNodes.filter(source => enabledSources[source.nodeId] !== false)
+  
+  // Строим структуру с динамическими ключами (поддержка дубликатов)
+  const typeCounts = {}
+  const sources = enabledNodes.map((node) => {
+    typeCounts[node.type] = (typeCounts[node.type] || 0) + 1
+    const key = typeCounts[node.type] === 1 ? node.type : `${node.type}_${typeCounts[node.type] - 1}`
+    return {
+      [key]: {
+        value: node.tags,
+        description: node.description,
+        ...(node.characterData && { characterData: node.characterData })
+      }
+    }
+  })
+  
+  // Формируем текстовый промпт
+  const textPrompt = enabledNodes
+    .map(source => source.prompt)
+    .filter(Boolean)
+    .concat(masterPrompt)
+    .join(', ')
+  
+  // Структурированный результат
+  const resultStructure = {
+    composer: {
+      description: composerDescription,
+      masterPrompt: masterPrompt,
+      sources: sources
+    },
+    resolution
+  }
+  
+  return {
+    prompt: textPrompt,
+    structuredPrompts: resultStructure,
+    resolution
+  }
 }
 
 const getConnectionColor = (conn) => {

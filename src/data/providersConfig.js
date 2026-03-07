@@ -2,7 +2,8 @@
 
 export const providerTypes = {
   MIDJOURNEY: 'midjourney',
-  OPENROUTER: 'openrouter',
+  OPENROUTER_TEXT: 'openrouter_text',
+  OPENROUTER_IMAGES: 'openrouter_images',
   GOOGLE_NANO: 'google_nano',
   OPENAI: 'openai',
   STABILITY: 'stability',
@@ -34,16 +35,17 @@ export const providerConfigs = {
     maxPromptLength: 6000
   },
   
-  [providerTypes.OPENROUTER]: {
-    id: providerTypes.OPENROUTER,
-    name: 'OpenRouter',
-    description: 'Доступ к множеству моделей через unified API',
+  [providerTypes.OPENROUTER_TEXT]: {
+    id: providerTypes.OPENROUTER_TEXT,
+    name: 'OpenRouter Text',
+    description: 'Текстовые модели через unified API (скоро)',
     icon: 'pi pi-globe',
     color: '#5b21b6',
     requiresApiKey: true,
     apiKeyLabel: 'OpenRouter API Key',
     apiKeyPlaceholder: 'sk-or-...',
     helpUrl: 'https://openrouter.ai/docs',
+    disabled: true,
     fields: [
       { name: 'apiKey', label: 'API Key', type: 'password', required: true },
       { name: 'model', label: 'Model', type: 'select', required: true, 
@@ -61,6 +63,33 @@ export const providerConfigs = {
       maxTokens: { min: 100, max: 4096, step: 100 }
     },
     maxPromptLength: 8000
+  },
+  
+  [providerTypes.OPENROUTER_IMAGES]: {
+    id: providerTypes.OPENROUTER_IMAGES,
+    name: 'OpenRouter Images',
+    description: 'Генерация изображений через OpenRouter',
+    icon: 'pi pi-image',
+    color: '#7c3aed',
+    requiresApiKey: true,
+    apiKeyLabel: 'OpenRouter API Key',
+    apiKeyPlaceholder: 'sk-or-...',
+    helpUrl: 'https://openrouter.ai/docs#image-generation',
+    fields: [
+      { name: 'apiKey', label: 'API Key', type: 'password', required: true },
+      { name: 'model', label: 'Model', type: 'select', required: true, 
+        options: [
+          { value: 'bytedance-seed/seedream-4.5', label: 'ByteDance Seedream 4.5' },
+          { value: 'openai/dall-e-3', label: 'DALL-E 3' },
+          { value: 'openai/dall-e-2', label: 'DALL-E 2' }
+        ]
+      }
+    ],
+    supportedOptions: {
+      // OpenRouter модели берут параметры из промпта автоматически
+      // Настройки не требуются
+    },
+    maxPromptLength: 4000
   },
   
   [providerTypes.GOOGLE_NANO]: {
@@ -180,7 +209,8 @@ export const getProvidersList = () => {
     description: p.description,
     icon: p.icon,
     color: p.color,
-    requiresApiKey: p.requiresApiKey
+    requiresApiKey: p.requiresApiKey,
+    disabled: p.disabled || false
   }))
 }
 
