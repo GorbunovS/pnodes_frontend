@@ -193,10 +193,14 @@ export const useBoardStore = defineStore('board', () => {
     if (!fromNode || !toNode) return false
 
     // Проверяем совместимость типов
-    const fromType = fromNode.config?.outputType
+    const fromType = fromNode.type
     const toType = toNode.type
     
-    // TODO: использовать canConnect из nodeConfig
+    // Используем canConnect из nodeConfig для проверки
+    if (!canConnect(fromType, toType, toNode.config)) {
+      console.log('Connection rejected:', fromType, '->', toType)
+      return false
+    }
     
     const exists = connections.value.some(c =>
       c.fromNodeId === fromNodeId && c.fromOutIdx === fromOutIdx &&
@@ -205,9 +209,9 @@ export const useBoardStore = defineStore('board', () => {
     if (exists) return false
 
     // Для обычных нод - удаляем существующие связи к этому input (только одна связь разрешена)
-    // Для композитора - разрешаем множественные связи
-    const isComposer = toNode.config?.isComposer
-    if (!isComposer) {
+    // Для композитора и нод с acceptAnyInput - разрешаем множественные связи
+    const acceptMultiple = toNode.config?.isComposer || toNode.config?.acceptAnyInput
+    if (!acceptMultiple) {
       connections.value = connections.value.filter(c => !(c.toNodeId === toNodeId && c.toInIdx === toInIdx))
     }
     

@@ -315,8 +315,47 @@
         </button>
       </div>
 
+      <!-- Части лица со свитчами (как в Композиторе) -->
+      <div v-if="connectedNodes && connectedNodes.length > 0" class="pt-2 border-t border-zinc-700/50">
+        <div class="text-[11px] text-zinc-500 mb-2 uppercase tracking-wider">Части лица</div>
+        <div class="space-y-2">
+          <div 
+            v-for="(part, index) in characterConnectedSources" 
+            :key="part.nodeId"
+            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-black"
+            :style="{ backgroundColor: part.color }"
+          >
+            <span>
+              {{ part.name }}
+              <span v-if="hasCharacterDuplicateType(part.type)" class="text-[10px] opacity-60 ml-1">#{{ index + 1 }}</span>
+            </span>
+            <ToggleSwitch 
+              v-model="part.enabled"
+              @change="onCharacterPartToggle"
+              class="custom-switch"
+              :pt="{
+                root: { 
+                  class: 'w-10 h-5 rounded-lg border-0',
+                  style: { backgroundColor: 'rgba(0,0,0,0.3)' }
+                },
+                slider: { 
+                  class: 'rounded-md shadow-none',
+                  style: { 
+                    backgroundColor: part.enabled ? '#ffffff' : 'rgba(255,255,255,0.5)',
+                    borderRadius: '4px',
+                    width: '14px',
+                    height: '14px',
+                    margin: '3px'
+                  }
+                }
+              }"
+            />
+          </div>
+        </div>
+      </div>
+
       <!-- Параметры (промпт) -->
-      <div class="pt-2 mt-2 border-t border-zinc-700/50">
+      <div class="pt-2 border-t border-zinc-700/50">
         <div class="text-[11px] text-zinc-500 mb-1.5">Параметры:</div>
         <div class="text-sm text-zinc-300 font-mono bg-zinc-900/50 rounded-lg p-2.5 leading-relaxed">
           {{ characterPrompt }}
@@ -399,12 +438,14 @@
       <div class="text-xs text-zinc-500 mb-2 uppercase tracking-wider">источники</div>
       <div class="flex flex-wrap gap-2">
         <div 
-          v-for="source in connectedSources" 
+          v-for="(source, index) in connectedSources" 
           :key="source.nodeId"
           class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-black"
           :style="{ backgroundColor: source.color }"
+          :title="source.name + ' #' + (index + 1)"
         >
           {{ source.name }}
+          <span v-if="hasDuplicateType(source.type)" class="text-[10px] opacity-60">#{{ index + 1 }}</span>
           <ToggleSwitch 
             v-model="source.enabled"
             @change="onSourceToggle"
@@ -705,6 +746,34 @@ const characterGender = ref(props.modelValue.gender || 'male')
 const characterAge = ref(props.modelValue.age || 25)
 const characterHeight = ref(props.modelValue.height || 175)
 const characterWeight = ref(props.modelValue.weight || 70)
+const localEnabledParts = ref(props.modelValue.enabledParts || {})
+
+// Собранные части лица со свитчами
+const characterConnectedSources = computed(() => {
+  return props.connectedNodes.map(node => ({
+    ...node,
+    enabled: localEnabledParts.value[node.nodeId] !== false
+  }))
+})
+
+// Проверка дубликатов типов для персонажа
+const hasCharacterDuplicateType = (type) => {
+  const types = props.connectedNodes.map(n => n.type)
+  return types.filter(t => t === type).length > 1
+}
+
+const onCharacterPartToggle = () => {
+  const newEnabled = {}
+  characterConnectedSources.value.forEach(part => {
+    newEnabled[part.nodeId] = part.enabled
+  })
+  localEnabledParts.value = newEnabled
+  
+  emit('update:modelValue', { 
+    ...props.modelValue, 
+    enabledParts: newEnabled 
+  })
+}
 
 const genderOptions = [
   { label: 'Male', value: 'male' },
@@ -928,6 +997,12 @@ const connectedSources = computed(() => {
     enabled: localEnabledSources.value[node.nodeId] !== false
   }))
 })
+
+// Проверка есть ли дубликаты типа (для отображения индекса)
+const hasDuplicateType = (type) => {
+  const types = props.connectedNodes.map(n => n.type)
+  return types.filter(t => t === type).length > 1
+}
 
 // === МЕТОДЫ ===
 const canAddMore = () => localTags.value.length < props.maxTags

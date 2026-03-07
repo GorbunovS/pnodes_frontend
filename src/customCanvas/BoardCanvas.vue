@@ -127,7 +127,7 @@
         :tags="node.config?.tags || []"
         :is-composer="node.config?.isComposer ?? false"
         :is-result="node.config?.isResult ?? false"
-        :is-character="node.type === 'character'"
+        :is-character="node.config?.isCharacter ?? false"
         :max-tags="node.config?.maxTags || 5"
         :has-description="node.config?.hasDescription ?? true"
         :has-output="node.config?.hasOutput ?? true"
@@ -140,7 +140,7 @@
         :is-selected="store.isSelected(node.id)"
         :is-source="isSourceNode(node.id)"
         :z-index="node.zIndex"
-        :connected-nodes="node.config?.isComposer ? getConnectedNodes(node.id) : []"
+        :connected-nodes="(node.config?.isComposer || node.type === 'character') ? getConnectedNodes(node.id) : []"
         :composer-data="node.config?.isResult ? getComposerDataForResult(node.id) : null"
         v-model="node.data"
         @port-click="handlePortClick"
@@ -251,15 +251,26 @@ const getConnectedNodes = (composerNodeId) => {
     // Специальная обработка для персонажа
     if (fromNode.type === 'character') {
       const charData = fromNode.data
-      const charPrompt = charData?.prompt || ''
+      const basePrompt = charData?.prompt || ''
+      const enabledParts = charData?.enabledParts || {}
+      
+      // Собираем промпты от частей лица (только включённые)
+      const faceParts = getConnectedNodes(fromNode.id)
+      const partsPrompts = faceParts
+        .filter(part => enabledParts[part.nodeId] !== false)
+        .map(part => part.prompt)
+        .filter(Boolean)
+      
+      const fullPrompt = [basePrompt, ...partsPrompts].join(', ')
+      
       return {
         nodeId: fromNode.id,
         name: fromNode.config?.name || fromNode.name,
         color: fromNode.config?.color || '#6ee7b7',
         type: fromNode.type,
-        prompt: charPrompt,
-        tags: charPrompt,
-        description: '',
+        prompt: fullPrompt,
+        tags: basePrompt,
+        description: partsPrompts.join(', '),
         characterData: {
           gender: charData?.gender,
           age: charData?.age,
@@ -301,12 +312,22 @@ const getComposerDataForResult = (resultNodeId) => {
   const sourceNodes = getConnectedNodes(composerNode.id)
   const enabledNodes = sourceNodes.filter(source => enabledSources[source.nodeId] !== false)
   
-  // Строим структуру: каждая нода как ключ с типом
-  const subNodes = {}
-  enabledNodes.forEach(node => {
-    subNodes[node.type] = {
-      value: node.tags,
-      description: node.description
+  // Строим структуру: массив объектов с динамическими ключами (поддержка дубликатов)
+  // Подсчитываем количество каждого типа для создания уникальных ключей
+  const typeCounts = {}
+  const sources = enabledNodes.map((node) => {
+    // Увеличиваем счетчик для этого типа
+    typeCounts[node.type] = (typeCounts[node.type] || 0) + 1
+    // Создаем ключ: тип или тип_номер (если дубликат)
+    const key = typeCounts[node.type] === 1 ? node.type : `${node.type}_${typeCounts[node.type] - 1}`
+    
+    // Возвращаем объект с динамическим ключом
+    return {
+      [key]: {
+        value: node.tags,
+        description: node.description,
+        ...(node.characterData && { characterData: node.characterData })
+      }
     }
   })
   
@@ -315,7 +336,7 @@ const getComposerDataForResult = (resultNodeId) => {
     composer: {
       description: composerDescription,
       masterPrompt: masterPrompt,
-      ...subNodes
+      sources: sources
     },
     resolution
   }

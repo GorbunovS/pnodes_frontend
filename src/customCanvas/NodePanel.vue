@@ -1,8 +1,8 @@
 <template>
   <Panel 
     header="Библиотека нод"
-    class="absolute top-5 left-5 z-50 border border-zinc-800 text-white backdrop-blur-md shadow-2xl rounded-xl overflow-hidden"
-    style="width: 280px; max-height: 75vh;"
+    class="absolute  top-5 left-5 z-50 border border-zinc-800 text-white backdrop-blur-md shadow-2xl rounded-xl overflow-hidden"
+    style="width: 350px; max-height: 75vh;"
   >
     <template #icons>
       <span class="text-[10px] text-zinc-500 px-2 py-0.5 rounded-full border border-zinc-700 mr-2">

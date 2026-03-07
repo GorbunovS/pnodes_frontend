@@ -16,37 +16,65 @@ import {
   characterMainPresets
 } from './characterPresets.js'
 
+// === РАНГИ НОД (иерархия подключений) ===
+// Чем меньше число, тем "ниже" в иерархии
+// Нода может принимать входы только от нод с рангом МЕНЬШЕ своего
+export const RANKS = {
+  PART: 1,      // Части персонажа (skin, nose, etc.)
+  ASSEMBLY: 2,  // Сборные ноды (character)
+  ELEMENT: 3,   // Элементы сцены (lighting, camera, etc.)
+  COMPOSER: 4,  // Композитор
+  OUTPUT: 5     // Результат
+}
+
+// Карта рангов для каждого типа
+const rankMap = {
+  // Ранг 1: Части
+  skin: RANKS.PART,
+  nose: RANKS.PART,
+  eyes: RANKS.PART,
+  mouth: RANKS.PART,
+  hair: RANKS.PART,
+  
+  // Ранг 2: Сборка
+  character: RANKS.ASSEMBLY,
+  
+  // Ранг 3: Элементы
+  lighting: RANKS.ELEMENT,
+  environment: RANKS.ELEMENT,
+  camera: RANKS.ELEMENT,
+  lens: RANKS.ELEMENT,
+  style: RANKS.ELEMENT,
+  mood: RANKS.ELEMENT,
+  photo: RANKS.ELEMENT,
+  video: RANKS.ELEMENT,
+  
+  // Ранг 4: Композитор
+  composer: RANKS.COMPOSER,
+  
+  // Ранг 5: Результат
+  result: RANKS.OUTPUT
+}
+
+// Получить ранг типа
+export const getNodeRank = (type) => rankMap[type] || RANKS.ELEMENT
+
 // === ТИПЫ НОД (основные категории) ===
 export const nodeTypes = {
-  // Категория: Свет
   LIGHTING: 'lighting',
-  
-  // Категория: Окружение  
   ENVIRONMENT: 'environment',
-  
-  // Категория: Камеры
   CAMERA: 'camera',
   LENS: 'lens',
-  
-  // Категория: Стиль
   STYLE: 'style',
-  
-  // Категория: Настроение
   MOOD: 'mood',
-  
-  // Категория: Персонаж
   CHARACTER: 'character',
   SKIN: 'skin',
   NOSE: 'nose',
   EYES: 'eyes',
   MOUTH: 'mouth',
   HAIR: 'hair',
-  
-  // Категория: Генерация (заглушки)
   PHOTO: 'photo',
   VIDEO: 'video',
-  
-  // Системные
   COMPOSER: 'composer',
   RESULT: 'result'
 }
@@ -126,9 +154,20 @@ export const connectionRules = {
 
 // === ПРОВЕРКА СОЕДИНЕНИЯ ===
 export const canConnect = (fromType, toType, toConfig = null) => {
-  if (toConfig?.acceptAnyInput) return true
+  // Приоритет 1: явный список разрешённых
   if (toConfig?.acceptsFrom) return toConfig.acceptsFrom.includes(fromType)
   
+  // Приоритет 2: acceptAnyInput разрешает любой тип
+  if (toConfig?.acceptAnyInput) return true
+  
+  // Приоритет 3: проверка по рангам (иерархия)
+  // Нода может принимать только от нод с рангом МЕНЬШЕ своего
+  const fromRank = getNodeRank(fromType)
+  const toRank = getNodeRank(toType)
+  
+  if (fromRank && toRank && fromRank < toRank) return true
+  
+  // Fallback: старые правила (для совместимости)
   const allowed = connectionRules[fromType]
   return allowed ? allowed.includes(toType) : false
 }
@@ -282,9 +321,10 @@ export const nodeConfigs = {
     hasDescription: true,
     hasInput: true,
     hasOutput: true,
-    acceptAnyInput: true,
+    acceptAnyInput: true, // Для множественных входов
     acceptsFrom: [nodeTypes.SKIN, nodeTypes.NOSE, nodeTypes.EYES, nodeTypes.MOUTH, nodeTypes.HAIR],
     outputType: nodeTypes.CHARACTER,
+    isCharacter: true, // Флаг для свитчей
     maxTags: 3,
     subTypes: {
       gender: { name: 'Пол', tags: characterMainPresets.gender },

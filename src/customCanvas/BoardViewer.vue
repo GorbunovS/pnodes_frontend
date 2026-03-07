@@ -11,6 +11,7 @@
   >
     <!-- Панель нод -->
     <NodePanel />
+  
 
     <div
       ref="dragContainer"
@@ -42,6 +43,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import BoardCanvas from './BoardCanvas.vue'
 import NodePanel from './NodePanel.vue'
+import ActionPanel from './ActionPanel.vue'
 
 const x = ref(0)
 const y = ref(0)
