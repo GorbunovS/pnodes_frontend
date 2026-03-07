@@ -73,15 +73,20 @@
     
     <!-- Дополнительное описание -->
     <div class="px-4 pb-4">
-      <textarea
+      <Textarea
         v-model="localDescription"
         placeholder="дополнительно"
-        class="w-full h-20 bg-black/80 rounded-xl p-3 text-sm text-zinc-300 placeholder-zinc-600 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-500"
-        :style="{ border: `1px solid ${nodeColor}40` }"
-        @pointerdown.stop
+        :rows="3"
+        class="w-full"
+        :pt="{
+          root: { 
+            class: 'w-full bg-black/80 rounded-xl p-3 text-sm text-zinc-300 placeholder-zinc-600 resize-none border-0 focus:ring-1 focus:ring-zinc-500',
+            style: { border: `1px solid ${nodeColor}40` }
+          }
+        }"
         @focus="onInputFocus"
         @blur="onInputBlur"
-      ></textarea>
+      />
     </div>
 
     <!-- Output порт (ромб в правом верхнем углу) -->
@@ -136,7 +141,7 @@
       modal
       :style="{ width: '360px' }"
       :pt="{
-        root: { class: '!bg-zinc-900/95 !border-zinc-700 !backdrop-blur-md' },
+        root: { class: '!bg-zinc-900/95 !border-zinc-700 !backdrop-blur-md', style: 'font-family: Inter, system-ui, sans-serif;' },
         header: { class: '!bg-zinc-800/80 !border-zinc-700 !p-4' },
         content: { class: '!bg-transparent !p-4' }
       }"
@@ -354,6 +359,24 @@
         </div>
       </div>
 
+      <!-- Дополнительное описание -->
+      <div class="pt-2 border-t border-zinc-700/50">
+        <Textarea
+          v-model="localDescription"
+          placeholder="дополнительно"
+          :rows="3"
+          class="w-full"
+          :pt="{
+            root: { 
+              class: 'w-full bg-black/80 rounded-xl p-3 text-sm text-zinc-300 placeholder-zinc-600 resize-none border-0 focus:ring-1 focus:ring-zinc-500',
+              style: { border: `1px solid ${nodeColor}40` }
+            }
+          }"
+          @focus="onInputFocus"
+          @blur="onInputBlur"
+        />
+      </div>
+
       <!-- Параметры (промпт) -->
       <div class="pt-2 border-t border-zinc-700/50">
         <div class="text-[11px] text-zinc-500 mb-1.5">Параметры:</div>
@@ -506,15 +529,20 @@
     <!-- Мастер промпт -->
     <div class="px-4 pb-4">
       <div class="text-xs text-zinc-500 mb-2 uppercase tracking-wider">мастер промпт</div>
-      <textarea
+      <Textarea
         v-model="localMasterPrompt"
         placeholder="дополнительные инструкции..."
-        class="w-full h-24 bg-black/80 rounded-xl p-3 text-sm text-zinc-300 placeholder-zinc-600 resize-none focus:outline-none focus:ring-1 focus:ring-zinc-500"
-        :style="{ border: `1px solid ${nodeColor}40` }"
-        @pointerdown.stop
+        :rows="4"
+        class="w-full"
+        :pt="{
+          root: { 
+            class: 'w-full bg-black/80 rounded-xl p-3 text-sm text-zinc-300 placeholder-zinc-600 resize-none border-0 focus:ring-1 focus:ring-zinc-500',
+            style: { border: `1px solid ${nodeColor}40` }
+          }
+        }"
         @focus="onInputFocus"
         @blur="onInputBlur"
-      ></textarea>
+      />
     </div>
 
     <!-- Output порт (ромб в правом верхнем углу) -->
@@ -666,6 +694,7 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
+import Textarea from 'primevue/textarea'
 import { useBoardStore } from '../store/boardStore.js'
 import { canConnect } from '../data/nodeConfig.js'
 import { useMotion } from '@vueuse/motion'
@@ -740,6 +769,9 @@ const isInputCompatible = computed(() => {
 
 // Цвет для пульсации
 const pulseColor = computed(() => store.activeSource?.color || props.nodeColor)
+
+// === ОБЩИЕ ДАННЫЕ (для всех нод) ===
+const localDescription = ref(props.modelValue.description || '')
 
 // === ДАННЫЕ ПЕРСОНАЖА ===
 const characterGender = ref(props.modelValue.gender || 'male')
@@ -818,6 +850,27 @@ watch([characterGender, characterAge, characterHeight, characterWeight], () => {
   }
 }, { deep: true })
 
+// Отдельный watch для description с debounce
+let descTimeout
+watch(localDescription, (newVal) => {
+  if (props.isCharacter) {
+    clearTimeout(descTimeout)
+    descTimeout = setTimeout(() => {
+      emit('update:modelValue', {
+        ...props.modelValue,
+        description: newVal
+      })
+    }, 100)
+  }
+})
+
+// Синхронизация извне
+watch(() => props.modelValue.description, (newDesc) => {
+  if (props.isCharacter && newDesc !== undefined && newDesc !== localDescription.value) {
+    localDescription.value = newDesc
+  }
+}, { immediate: true })
+
 // === MOTION для анимации портов ===
 const inputPortRef = ref(null)
 const { variant } = useMotion(inputPortRef, {
@@ -845,7 +898,6 @@ watch(isInputCompatible, (compatible) => {
 
 // === ОБЫЧНАЯ НОДА ===
 const localTags = ref(props.modelValue.tags || [])
-const localDescription = ref(props.modelValue.description || '')
 const showTagModal = ref(false)
 const searchQuery = ref('')
 
@@ -939,6 +991,13 @@ const onTextareaWheel = (e) => {
 watch(() => props.modelValue, (newVal) => {
   if (props.isResult) {
     isJsonMode.value = newVal.jsonMode || false
+  } else if (props.isCharacter) {
+    // Для персонажа localDescription синхронизируется отдельным watch
+    characterGender.value = newVal.gender || 'male'
+    characterAge.value = newVal.age || 25
+    characterHeight.value = newVal.height || 175
+    characterWeight.value = newVal.weight || 70
+    localEnabledParts.value = newVal.enabledParts || {}
   } else if (!props.isComposer) {
     localTags.value = newVal.tags || []
     localDescription.value = newVal.description || ''
@@ -950,7 +1009,7 @@ watch(() => props.modelValue, (newVal) => {
 }, { deep: true })
 
 watch([localTags, localDescription], () => {
-  if (!props.isComposer) {
+  if (!props.isComposer && !props.isCharacter && !props.isResult) {
     emit('update:modelValue', { tags: localTags.value, description: localDescription.value })
   }
 }, { deep: true })

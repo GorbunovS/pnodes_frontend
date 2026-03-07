@@ -253,6 +253,7 @@ const getConnectedNodes = (composerNodeId) => {
       const charData = fromNode.data
       const basePrompt = charData?.prompt || ''
       const enabledParts = charData?.enabledParts || {}
+      const description = charData?.description || ''
       
       // Собираем промпты от частей лица (только включённые)
       const faceParts = getConnectedNodes(fromNode.id)
@@ -261,7 +262,7 @@ const getConnectedNodes = (composerNodeId) => {
         .map(part => part.prompt)
         .filter(Boolean)
       
-      const fullPrompt = [basePrompt, ...partsPrompts].join(', ')
+      const fullPrompt = [basePrompt, ...partsPrompts, description].filter(Boolean).join(', ')
       
       return {
         nodeId: fromNode.id,
@@ -270,7 +271,8 @@ const getConnectedNodes = (composerNodeId) => {
         type: fromNode.type,
         prompt: fullPrompt,
         tags: basePrompt,
-        description: partsPrompts.join(', '),
+        description: description,
+        faceParts: partsPrompts,
         characterData: {
           gender: charData?.gender,
           age: charData?.age,

@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { useHistoryStore } from './historyStore'
 import { nodeConfigs, getNodeConfig, nodeTypes, canConnect } from '../data/nodeConfig.js'
 
+      
+
 const CANVAS_WIDTH = 6000
 const CANVAS_HEIGHT = 4000
 
