@@ -72,7 +72,7 @@
     <div
       v-for="node in store.getSortedNodes"
       :key="node.id"
-      class="absolute"
+      class="absolute cursor-move"
       :style="{ 
         transform: `translate(${node.x}px, ${node.y}px)`,
         zIndex: node.zIndex || 1

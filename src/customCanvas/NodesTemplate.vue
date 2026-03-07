@@ -426,11 +426,13 @@
       
       <div v-else>
         <textarea
+          ref="promptTextarea"
           :value="displayPrompt"
           readonly
-          class="w-full h-32 bg-black/60 rounded-xl p-3 text-sm text-zinc-200 resize-none focus:outline-none font-mono"
+          class="w-full h-32 bg-black/60 rounded-xl p-3 text-sm text-zinc-200 resize-none focus:outline-none font-mono overflow-auto cursor-text"
           :style="{ border: `1px solid ${nodeColor}40` }"
-          @pointerdown.stop
+          @wheel="onTextareaWheel"
+          @mousedown.stop
         ></textarea>
         
         <!-- Инфо о разрешении -->
@@ -577,6 +579,9 @@ const nodeRef = ref(null)
 const outputPortRef = ref(null)
 // inputPortRef объявлен выше для useMotion
 
+// === REFS для Result ===
+const promptTextarea = ref(null)
+
 // === Методы для получения позиций портов ===
 const getOutputPortPosition = () => {
   const portEl = outputPortRef.value
@@ -627,6 +632,23 @@ const copyPrompt = () => {
   const textToCopy = displayPrompt.value
   if (textToCopy) {
     navigator.clipboard.writeText(textToCopy)
+  }
+}
+
+// Обработчик wheel для textarea в Result - позволяет скроллить текст, но не блокирует зум канвы
+const onTextareaWheel = (e) => {
+  const textarea = promptTextarea.value
+  if (!textarea) return
+  
+  const isScrollingUp = e.deltaY < 0
+  const isScrollingDown = e.deltaY > 0
+  const isAtTop = textarea.scrollTop === 0
+  const isAtBottom = textarea.scrollTop + textarea.clientHeight >= textarea.scrollHeight
+  
+  // Если скроллим внутри textarea и есть куда скроллить - останавливаем всплытие
+  // Иначе позволяем событию дойти до канвы для зума
+  if ((isScrollingDown && !isAtBottom) || (isScrollingUp && !isAtTop)) {
+    e.stopPropagation()
   }
 }
 
