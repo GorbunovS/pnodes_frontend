@@ -127,6 +127,7 @@
         :tags="node.config?.tags || []"
         :is-composer="node.config?.isComposer ?? false"
         :is-result="node.config?.isResult ?? false"
+        :is-character="node.type === 'character'"
         :max-tags="node.config?.maxTags || 5"
         :has-description="node.config?.hasDescription ?? true"
         :has-output="node.config?.hasOutput ?? true"
@@ -246,6 +247,28 @@ const getConnectedNodes = (composerNodeId) => {
   return connections.map(conn => {
     const fromNode = store.getNodeById(conn.fromNodeId)
     if (!fromNode) return null
+    
+    // Специальная обработка для персонажа
+    if (fromNode.type === 'character') {
+      const charData = fromNode.data
+      const charPrompt = charData?.prompt || ''
+      return {
+        nodeId: fromNode.id,
+        name: fromNode.config?.name || fromNode.name,
+        color: fromNode.config?.color || '#6ee7b7',
+        type: fromNode.type,
+        prompt: charPrompt,
+        tags: charPrompt,
+        description: '',
+        characterData: {
+          gender: charData?.gender,
+          age: charData?.age,
+          height: charData?.height,
+          weight: charData?.weight
+        }
+      }
+    }
+    
     const tagsPrompt = fromNode.data?.tags?.map(t => t.prompt).join(', ') || ''
     const description = fromNode.data?.description || ''
     return {

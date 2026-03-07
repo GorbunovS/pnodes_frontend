@@ -1,7 +1,7 @@
 <template>
   <!-- ОБЫЧНАЯ НОДА С ТЕГАМИ -->
   <div 
-    v-if="!isComposer && !isResult"
+    v-if="!isComposer && !isResult && !isCharacter"
     ref="nodeRef"
     class="relative w-[320px] backdrop-blur-md transition-all flex flex-col group"
     :class="[
@@ -190,6 +190,163 @@
         />
       </template>
     </Dialog>
+  </div>
+
+  <!-- НОДА ПЕРСОНАЖА (специальный шаблон) -->
+  <div 
+    v-else-if="isCharacter"
+    ref="nodeRef"
+    class="relative w-[300px] backdrop-blur-md transition-all flex flex-col group"
+    :class="[
+      isSelected ? 'ring-2 ring-white' : '',
+      isSource ? 'animate-pulse' : ''
+    ]"
+    :style="{ 
+      zIndex: zIndex || 1,
+      backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.3)',
+      border: `2px solid ${isSelected ? nodeColor : nodeColor + '99'}`,
+      borderRadius: '1rem',
+      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none'
+    }"
+    :data-id="nodeId"
+  >
+    <!-- Название ноды - сверху справа -->
+    <div 
+      class="absolute -top-3 right-4 px-2 py-0.5 text-xs font-medium rounded-full z-10"
+      :style="{ backgroundColor: nodeColor, color: '#000' }"
+    >
+      {{ title }}
+    </div>
+    
+    <!-- Input порт (ромб в левом верхнем углу) -->
+    <div 
+      v-if="hasInput"
+      class="absolute -left-3 -top-3 w-6 h-6 cursor-crosshair flex items-center justify-center transition-all duration-200 ease-out hover:scale-125 hover:shadow-lg"
+      :class="{ 'input-pulse': isInputCompatible }"
+      :style="{ 
+        backgroundColor: hasInputConnection ? nodeColor : '#18181b',
+        border: `2px solid ${isInputCompatible ? pulseColor : nodeColor}`,
+        opacity: '1',
+        boxShadow: isInputCompatible ? `0 0 15px ${pulseColor}, 0 0 30px ${pulseColor}80` : 'none'
+      }"
+      :data-port="'input'"
+      data-idx="0"
+      :data-type="inputType"
+      @click.stop="onInputClick"
+      @dblclick.stop="onInputDblClick"
+    >
+    </div>
+
+    <!-- Параметры персонажа -->
+    <div class="p-4 pt-5 space-y-2" @wheel.stop @mousedown.stop>
+      <!-- Пол (PrimeVue Select) -->
+      <div class="bg-zinc-800/60 rounded-lg px-3 py-2.5">
+        <Select
+          v-model="characterGender"
+          :options="genderOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full"
+          :pt="{
+            root: { class: '!border-none !bg-transparent' },
+            input: { class: '!text-zinc-200 !text-base !py-1 !px-0' },
+            dropdown: { class: '!text-zinc-400 !w-8' }
+          }"
+        />
+      </div>
+
+      <!-- Возраст -->
+      <div class="bg-zinc-800/60 rounded-lg px-3 py-2.5 flex items-center justify-between">
+        <button 
+          class="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"
+          @click="characterAge = Math.max(0, characterAge - 1)"
+        >
+          <i class="pi pi-chevron-left text-xs"></i>
+        </button>
+        <div class="flex flex-col items-center">
+          <span class="text-[11px] text-zinc-400 uppercase tracking-wider">Возраст</span>
+          <span class="text-base text-zinc-200 font-mono">{{ characterAge }}</span>
+        </div>
+        <button 
+          class="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"
+          @click="characterAge = Math.min(120, characterAge + 1)"
+        >
+          <i class="pi pi-chevron-right text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Рост -->
+      <div class="bg-zinc-800/60 rounded-lg px-3 py-2.5 flex items-center justify-between">
+        <button 
+          class="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"
+          @click="characterHeight = Math.max(50, characterHeight - 5)"
+        >
+          <i class="pi pi-chevron-left text-xs"></i>
+        </button>
+        <div class="flex flex-col items-center">
+          <span class="text-[11px] text-zinc-400 uppercase tracking-wider">Рост (см)</span>
+          <span class="text-base text-zinc-200 font-mono">{{ characterHeight }}</span>
+        </div>
+        <button 
+          class="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"
+          @click="characterHeight = Math.min(250, characterHeight + 5)"
+        >
+          <i class="pi pi-chevron-right text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Вес -->
+      <div class="bg-zinc-800/60 rounded-lg px-3 py-2.5 flex items-center justify-between">
+        <button 
+          class="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"
+          @click="characterWeight = Math.max(20, characterWeight - 5)"
+        >
+          <i class="pi pi-chevron-left text-xs"></i>
+        </button>
+        <div class="flex flex-col items-center">
+          <span class="text-[11px] text-zinc-400 uppercase tracking-wider">Вес (кг)</span>
+          <span class="text-base text-zinc-200 font-mono">{{ characterWeight }}</span>
+        </div>
+        <button 
+          class="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 rounded"
+          @click="characterWeight = Math.min(300, characterWeight + 5)"
+        >
+          <i class="pi pi-chevron-right text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Параметры (промпт) -->
+      <div class="pt-2 mt-2 border-t border-zinc-700/50">
+        <div class="text-[11px] text-zinc-500 mb-1.5">Параметры:</div>
+        <div class="text-sm text-zinc-300 font-mono bg-zinc-900/50 rounded-lg p-2.5 leading-relaxed">
+          {{ characterPrompt }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Output порт (ромб в правом верхнем углу) -->
+    <div 
+      v-if="hasOutput"
+      class="absolute -right-3 -top-3 w-6 h-6 cursor-crosshair flex items-center justify-center transition-all duration-200 ease-out hover:scale-125 hover:shadow-lg"
+      :style="{ 
+        backgroundColor: hasOutputConnection ? nodeColor : '#18181b',
+        border: `2px solid ${nodeColor}`,
+        opacity: '1',
+        boxShadow: isSource ? `0 0 10px ${nodeColor}` : 'none'
+      }"
+      :data-port="'output'"
+      data-idx="0"
+      :data-type="outputType"
+      @pointerdown.stop="onOutputPointerDown"
+      @click.stop="onOutputClick"
+      @dblclick.stop="onOutputDblClick"
+    >
+      <div 
+        v-if="isSource"
+        class="w-2 h-2"
+        :style="{ backgroundColor: nodeColor }"
+      ></div>
+    </div>
   </div>
 
   <!-- КОМПОЗИТОР -->
@@ -465,6 +622,8 @@ import { ref, computed, watch } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
+import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useBoardStore } from '../store/boardStore.js'
 import { canConnect } from '../data/nodeConfig.js'
@@ -485,6 +644,7 @@ const props = defineProps({
   // Тип ноды
   isComposer: { type: Boolean, default: false },
   isResult: { type: Boolean, default: false },
+  isCharacter: { type: Boolean, default: false },
   
   // Для обычной ноды
   tags: { type: Array, default: () => [] },
@@ -539,6 +699,55 @@ const isInputCompatible = computed(() => {
 
 // Цвет для пульсации
 const pulseColor = computed(() => store.activeSource?.color || props.nodeColor)
+
+// === ДАННЫЕ ПЕРСОНАЖА ===
+const characterGender = ref(props.modelValue.gender || 'male')
+const characterAge = ref(props.modelValue.age || 25)
+const characterHeight = ref(props.modelValue.height || 175)
+const characterWeight = ref(props.modelValue.weight || 70)
+
+const genderOptions = [
+  { label: 'Male', value: 'male' },
+  { label: 'Female', value: 'female' },
+  { label: 'Androgynous', value: 'androgynous' }
+]
+
+// Сформировать промпт персонажа
+const characterPrompt = computed(() => {
+  const parts = []
+  
+  // Пол
+  if (characterGender.value === 'male') parts.push('male character')
+  else if (characterGender.value === 'female') parts.push('female character')
+  else parts.push('androgynous character')
+  
+  // Возраст
+  if (characterAge.value < 13) parts.push('child')
+  else if (characterAge.value < 20) parts.push('teenager')
+  else if (characterAge.value < 30) parts.push('young adult')
+  else if (characterAge.value < 50) parts.push('adult')
+  else parts.push('elderly')
+  
+  // Рост/вес для детализации
+  parts.push(`${characterHeight.value}cm height`)
+  parts.push(`${characterWeight.value}kg build`)
+  
+  return parts.join(', ')
+})
+
+// Синхронизация данных персонажа
+watch([characterGender, characterAge, characterHeight, characterWeight], () => {
+  if (props.isCharacter) {
+    emit('update:modelValue', {
+      ...props.modelValue,
+      gender: characterGender.value,
+      age: characterAge.value,
+      height: characterHeight.value,
+      weight: characterWeight.value,
+      prompt: characterPrompt.value
+    })
+  }
+}, { deep: true })
 
 // === MOTION для анимации портов ===
 const inputPortRef = ref(null)

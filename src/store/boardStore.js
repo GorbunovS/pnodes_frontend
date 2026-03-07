@@ -280,7 +280,7 @@ export const useBoardStore = defineStore('board', () => {
     // Создаём демо-ноды разных типов
     createNode(nodeTypes.LIGHTING, cx - 200, cy - 100, {}, false)
     createNode(nodeTypes.CAMERA, cx - 200, cy + 50, {}, false)
-    createNode(nodeTypes.ENVIRONMENT, cx - 200, cy + 200, {}, false)
+    createNode(nodeTypes.CHARACTER, cx - 200, cy + 200, {}, false)
     historyStore.init({ nodes: JSON.parse(JSON.stringify(nodes.value)), connections: [], nextNodeId: nextNodeId.value, nextZIndex: nextZIndex.value })
     saveToSession()
   }

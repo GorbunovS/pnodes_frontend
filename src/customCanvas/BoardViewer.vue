@@ -39,13 +39,38 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import BoardCanvas from './BoardCanvas.vue'
 import NodePanel from './NodePanel.vue'
 
 const x = ref(0)
 const y = ref(0)
 const scale = ref(0.8)
+
+// Загрузка позиции из localStorage
+onMounted(() => {
+  const savedViewport = localStorage.getItem('canvasViewport')
+  if (savedViewport) {
+    try {
+      const { panX, panY, zoom } = JSON.parse(savedViewport)
+      x.value = panX
+      y.value = panY
+      scale.value = zoom
+      clampPosition()
+    } catch (e) {
+      console.log('Failed to load viewport')
+    }
+  }
+})
+
+// Сохранение позиции при изменении
+watch([x, y, scale], () => {
+  localStorage.setItem('canvasViewport', JSON.stringify({
+    panX: x.value,
+    panY: y.value,
+    zoom: scale.value
+  }))
+}, { debounce: 100 })
 
 const onCenterCanvas = ({ panX, panY }) => {
   x.value = panX

@@ -5,9 +5,16 @@ import {
   environmentPresets,
   stylePresets,
   moodPresets,
-  characterPresets,
   generationPresets
 } from './nodePresets.js'
+import {
+  skinPresets,
+  nosePresets,
+  eyesPresets,
+  mouthPresets,
+  hairPresets,
+  characterMainPresets
+} from './characterPresets.js'
 
 // === ТИПЫ НОД (основные категории) ===
 export const nodeTypes = {
@@ -27,9 +34,13 @@ export const nodeTypes = {
   // Категория: Настроение
   MOOD: 'mood',
   
-  // Категория: Персонаж (заглушки)
-  CHARACTER_TEMPLATE: 'character_template',
-  FACE_CONSTRUCTOR: 'face_constructor',
+  // Категория: Персонаж
+  CHARACTER: 'character',
+  SKIN: 'skin',
+  NOSE: 'nose',
+  EYES: 'eyes',
+  MOUTH: 'mouth',
+  HAIR: 'hair',
   
   // Категория: Генерация (заглушки)
   PHOTO: 'photo',
@@ -82,8 +93,7 @@ export const nodeCategories = {
     name: 'Персонаж',
     icon: 'pi pi-user',
     color: '#93c5fd', // голубой
-    types: [nodeTypes.CHARACTER_TEMPLATE, nodeTypes.FACE_CONSTRUCTOR],
-    disabled: true // Пока не готово
+    types: [nodeTypes.CHARACTER, nodeTypes.SKIN, nodeTypes.NOSE, nodeTypes.EYES, nodeTypes.MOUTH, nodeTypes.HAIR]
   },
   GENERATION: {
     id: 'generation',
@@ -103,8 +113,12 @@ export const connectionRules = {
   [nodeTypes.LENS]: [nodeTypes.COMPOSER],
   [nodeTypes.STYLE]: [nodeTypes.COMPOSER],
   [nodeTypes.MOOD]: [nodeTypes.COMPOSER],
-  [nodeTypes.CHARACTER_TEMPLATE]: [nodeTypes.COMPOSER],
-  [nodeTypes.FACE_CONSTRUCTOR]: [nodeTypes.COMPOSER],
+  [nodeTypes.CHARACTER]: [nodeTypes.COMPOSER],
+  [nodeTypes.SKIN]: [nodeTypes.CHARACTER],
+  [nodeTypes.NOSE]: [nodeTypes.CHARACTER],
+  [nodeTypes.EYES]: [nodeTypes.CHARACTER],
+  [nodeTypes.MOUTH]: [nodeTypes.CHARACTER],
+  [nodeTypes.HAIR]: [nodeTypes.CHARACTER],
   [nodeTypes.PHOTO]: [nodeTypes.COMPOSER],
   [nodeTypes.VIDEO]: [nodeTypes.COMPOSER],
   [nodeTypes.COMPOSER]: [nodeTypes.RESULT]
@@ -258,41 +272,122 @@ export const nodeConfigs = {
     tags: moodPresets.emotion
   },
   
-  // === ПЕРСОНАЖ (заглушки) ===
-  [nodeTypes.CHARACTER_TEMPLATE]: {
-    name: 'Шаблон персонажа',
-    type: nodeTypes.CHARACTER_TEMPLATE,
+  // === ПЕРСОНАЖ (главная нода) ===
+  [nodeTypes.CHARACTER]: {
+    name: 'Персонаж',
+    type: nodeTypes.CHARACTER,
     category: 'character',
     icon: 'pi pi-user',
     color: '#93c5fd',
     hasDescription: true,
-    hasInput: false,
+    hasInput: true,
     hasOutput: true,
-    outputType: nodeTypes.CHARACTER_TEMPLATE,
-    maxTags: 0,
-    disabled: true,
-    tags: [],
+    acceptAnyInput: true,
+    acceptsFrom: [nodeTypes.SKIN, nodeTypes.NOSE, nodeTypes.EYES, nodeTypes.MOUTH, nodeTypes.HAIR],
+    outputType: nodeTypes.CHARACTER,
+    maxTags: 3,
     subTypes: {
-      template: { name: 'Шаблоны', tags: characterPresets.template }
-    }
+      gender: { name: 'Пол', tags: characterMainPresets.gender },
+      ageGroup: { name: 'Возраст', tags: characterMainPresets.ageGroup },
+      build: { name: 'Телосложение', tags: characterMainPresets.build },
+      ethnicity: { name: 'Этничность', tags: characterMainPresets.ethnicity }
+    },
+    tags: [
+      ...characterMainPresets.gender,
+      ...characterMainPresets.ageGroup,
+      ...characterMainPresets.build,
+      ...characterMainPresets.ethnicity
+    ]
   },
   
-  [nodeTypes.FACE_CONSTRUCTOR]: {
-    name: 'Конструктор лица',
-    type: nodeTypes.FACE_CONSTRUCTOR,
+  // === КОЖА ===
+  [nodeTypes.SKIN]: {
+    name: 'Кожа',
+    type: nodeTypes.SKIN,
     category: 'character',
-    icon: 'pi pi-face-smile',
-    color: '#93c5fd',
+    icon: 'pi pi-circle-fill',
+    color: '#fdba74',
     hasDescription: true,
     hasInput: false,
     hasOutput: true,
-    outputType: nodeTypes.FACE_CONSTRUCTOR,
-    maxTags: 0,
-    disabled: true,
-    tags: [],
+    outputType: nodeTypes.SKIN,
+    maxTags: 2,
     subTypes: {
-      face_constructor: { name: 'Лицо', tags: characterPresets.face_constructor }
-    }
+      skin: { name: 'Тип кожи', tags: skinPresets }
+    },
+    tags: skinPresets
+  },
+  
+  // === НОС ===
+  [nodeTypes.NOSE]: {
+    name: 'Нос',
+    type: nodeTypes.NOSE,
+    category: 'character',
+    icon: 'pi pi-minus',
+    color: '#fca5a5',
+    hasDescription: true,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.NOSE,
+    maxTags: 2,
+    subTypes: {
+      nose: { name: 'Форма носа', tags: nosePresets }
+    },
+    tags: nosePresets
+  },
+  
+  // === ГЛАЗА ===
+  [nodeTypes.EYES]: {
+    name: 'Глаза',
+    type: nodeTypes.EYES,
+    category: 'character',
+    icon: 'pi pi-eye',
+    color: '#86efac',
+    hasDescription: true,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.EYES,
+    maxTags: 3,
+    subTypes: {
+      eyes: { name: 'Глаза', tags: eyesPresets }
+    },
+    tags: eyesPresets
+  },
+  
+  // === ГУБЫ / РОТ ===
+  [nodeTypes.MOUTH]: {
+    name: 'Рот / Губы',
+    type: nodeTypes.MOUTH,
+    category: 'character',
+    icon: 'pi pi-heart',
+    color: '#f472b6',
+    hasDescription: true,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.MOUTH,
+    maxTags: 2,
+    subTypes: {
+      mouth: { name: 'Губы', tags: mouthPresets }
+    },
+    tags: mouthPresets
+  },
+  
+  // === ВОЛОСЫ ===
+  [nodeTypes.HAIR]: {
+    name: 'Волосы',
+    type: nodeTypes.HAIR,
+    category: 'character',
+    icon: 'pi pi-palette',
+    color: '#d4d4d8',
+    hasDescription: true,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.HAIR,
+    maxTags: 3,
+    subTypes: {
+      hair: { name: 'Волосы', tags: hairPresets }
+    },
+    tags: hairPresets
   },
   
   // === ГЕНЕРАЦИЯ (заглушки) ===
@@ -349,8 +444,7 @@ export const nodeConfigs = {
       nodeTypes.LENS,
       nodeTypes.STYLE, 
       nodeTypes.MOOD,
-      nodeTypes.CHARACTER_TEMPLATE,
-      nodeTypes.FACE_CONSTRUCTOR,
+      nodeTypes.CHARACTER,
       nodeTypes.PHOTO,
       nodeTypes.VIDEO
     ],

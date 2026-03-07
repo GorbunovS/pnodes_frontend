@@ -10,7 +10,7 @@
       </span>
     </template>
 
-    <div class="flex flex-col h-full overflow-hidden" style="max-height: calc(75vh - 50px);">
+    <div class="flex flex-col h-full overflow-hidden" style="height: calc(75vh - 50px);" @wheel.stop>
       <!-- === ПОИСК === -->
       <div class="p-2 border-b border-zinc-800 shrink-0">
         <div class="relative">
