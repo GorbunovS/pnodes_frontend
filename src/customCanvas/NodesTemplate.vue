@@ -1,7 +1,7 @@
 <template>
   <!-- ОБЫЧНАЯ НОДА С ТЕГАМИ -->
   <div 
-    v-if="!isComposer && !isResult && !isCharacter"
+    v-if="!isComposer && !isResult && !isCharacter && !isGeneration"
     ref="nodeRef"
     class="relative w-[320px] backdrop-blur-md transition-all flex flex-col group"
     :class="[
@@ -623,9 +623,9 @@
         
         <!-- Свитч режима -->
         <div class="flex items-center gap-2">
-          <span class="text-xs text-zinc-500">{{ isJsonMode ? 'JSON' : 'Текст' }}</span>
+          <span class="text-xs text-zinc-500">{{ isResultJsonMode ? 'JSON' : 'Текст' }}</span>
           <ToggleSwitch 
-            v-model="isJsonMode"
+            v-model="isResultJsonMode"
             class="custom-switch"
             :pt="{
               root: { 
@@ -635,7 +635,7 @@
               slider: { 
                 class: 'rounded-md shadow-none',
                 style: { 
-                  backgroundColor: isJsonMode ? nodeColor : 'rgba(255,255,255,0.5)',
+                  backgroundColor: isResultJsonMode ? nodeColor : 'rgba(255,255,255,0.5)',
                   borderRadius: '3px',
                   width: '10px',
                   height: '10px',
@@ -651,14 +651,14 @@
         Подключите композитор...
       </div>
       
-      <div v-else-if="!displayPrompt" class="text-zinc-500 text-sm py-8 text-center">
+      <div v-else-if="!resultDisplayPrompt" class="text-zinc-500 text-sm py-8 text-center">
         Нет данных от композитора
       </div>
       
       <div v-else>
         <textarea
           ref="promptTextarea"
-          :value="displayPrompt"
+          :value="resultDisplayPrompt"
           readonly
           class="w-full h-32 bg-black/60 rounded-xl p-3 text-sm text-zinc-200 resize-none focus:outline-none font-mono overflow-auto cursor-text"
           :style="{ border: `1px solid ${nodeColor}40` }"
@@ -674,7 +674,7 @@
         
         <!-- Кнопка копировать -->
         <Button 
-          :label="isJsonMode ? 'Копировать JSON' : 'Копировать промпт'"
+          :label="isResultJsonMode ? 'Копировать JSON' : 'Копировать промпт'"
           icon="pi pi-copy"
           size="small"
           class="w-full mt-3"
@@ -774,16 +774,46 @@
 
       <!-- Промпт preview (readonly) -->
       <div class="mb-4">
-        <label class="text-xs text-zinc-400 mb-1.5 block">Промпт</label>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs text-zinc-400">Промпт</label>
+          
+          <!-- Свитч режима -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-zinc-500">{{ isJsonMode ? 'JSON' : 'Текст' }}</span>
+            <ToggleSwitch 
+              v-model="isJsonMode"
+              class="custom-switch"
+              :pt="{
+                root: { 
+                  class: 'w-8 h-4 rounded-lg border-0',
+                  style: { backgroundColor: 'rgba(0,0,0,0.3)' }
+                },
+                slider: { 
+                  class: 'rounded-md shadow-none',
+                  style: { 
+                    backgroundColor: isJsonMode ? nodeColor : 'rgba(255,255,255,0.5)',
+                    borderRadius: '3px',
+                    width: '10px',
+                    height: '10px',
+                    margin: '3px'
+                  }
+                }
+              }"
+            />
+          </div>
+        </div>
         <Textarea
-          :value="inputPrompt"
+          ref="generationPromptTextarea"
+          :value="displayPrompt"
           readonly
-          :rows="3"
+          :rows="4"
           class="w-full"
           :pt="{
-            root: { class: '!bg-black/50 !border-zinc-700 !text-zinc-400 text-sm' }
+            root: { class: '!bg-black/50 !border-zinc-700 !text-zinc-300 text-sm font-mono' }
           }"
-          placeholder="Подключите ноду с промптом..."
+          placeholder="Подключите композитор..."
+          @wheel="onTextareaWheel"
+          @mousedown.stop
         />
       </div>
 
@@ -1036,6 +1066,32 @@ const canGenerate = computed(() => {
          availableProviders.value.length > 0
 })
 
+// Режим отображения промпта (JSON/Текст)
+const isJsonMode = ref(props.modelValue.jsonMode || false)
+
+// Отображаемый промпт (текст или JSON)
+const displayPrompt = computed(() => {
+  if (!inputPrompt.value) return ''
+  
+  if (isJsonMode.value) {
+    // Формируем JSON структуру как в композиторе
+    return JSON.stringify({
+      prompt: inputPrompt.value,
+      provider: selectedProviderId.value,
+      options: generationOptions.value
+    }, null, 2)
+  }
+  
+  return inputPrompt.value
+})
+
+// Синхронизация isJsonMode
+watch(isJsonMode, (val) => {
+  if (props.isGeneration) {
+    emit('update:modelValue', { ...props.modelValue, jsonMode: val })
+  }
+})
+
 // Инициализация дефолтных опций при смене провайдера
 watch(selectedProviderId, (newId) => {
   if (newId) {
@@ -1238,9 +1294,6 @@ const localEnabledSources = ref(props.modelValue.enabledSources || {})
 const localResolution = ref(props.modelValue.resolution || { width: 1920, height: 1080 })
 const localMasterPrompt = ref(props.modelValue.masterPrompt || '')
 
-// === RESULT ===
-const isJsonMode = ref(props.modelValue.jsonMode || false)
-
 // === REFS для нод и портов ===
 const nodeRef = ref(null)
 const outputPortRef = ref(null)
@@ -1248,6 +1301,7 @@ const outputPortRef = ref(null)
 
 // === REFS для Result ===
 const promptTextarea = ref(null)
+const generationPromptTextarea = ref(null)
 
 // === Методы для получения позиций портов ===
 const getOutputPortPosition = () => {
@@ -1280,10 +1334,13 @@ const connectedComposerResolution = computed(() => {
   return props.composerData?.resolution || null
 })
 
-const displayPrompt = computed(() => {
+// === RESULT НОДА ===
+const isResultJsonMode = ref(props.modelValue.isResultJsonMode || false)
+
+const resultDisplayPrompt = computed(() => {
   if (!props.composerData) return ''
   
-  if (isJsonMode.value) {
+  if (isResultJsonMode.value) {
     // Выводим структуру как есть
     return JSON.stringify(props.composerData.structuredPrompts || {}, null, 2)
   }
@@ -1291,26 +1348,34 @@ const displayPrompt = computed(() => {
   return connectedComposerPrompt.value
 })
 
-watch(isJsonMode, (val) => {
-  emit('update:modelValue', { ...props.modelValue, jsonMode: val })
+watch(isResultJsonMode, (val) => {
+  if (props.isResult) {
+    emit('update:modelValue', { ...props.modelValue, isResultJsonMode: val })
+  }
 })
 
 const copyPrompt = () => {
-  const textToCopy = displayPrompt.value
+  let textToCopy = ''
+  if (props.isGeneration) {
+    textToCopy = displayPrompt.value
+  } else if (props.isResult) {
+    textToCopy = resultDisplayPrompt.value
+  }
   if (textToCopy) {
     navigator.clipboard.writeText(textToCopy)
   }
 }
 
-// Обработчик wheel для textarea в Result - позволяет скроллить текст, но не блокирует зум канвы
+// Обработчик wheel для textarea - позволяет скроллить текст, но не блокирует зум канвы
 const onTextareaWheel = (e) => {
-  const textarea = promptTextarea.value
-  if (!textarea) return
+  // Определяем какой textarea используется
+  const target = e.target
+  if (!target) return
   
   const isScrollingUp = e.deltaY < 0
   const isScrollingDown = e.deltaY > 0
-  const isAtTop = textarea.scrollTop === 0
-  const isAtBottom = textarea.scrollTop + textarea.clientHeight >= textarea.scrollHeight
+  const isAtTop = target.scrollTop === 0
+  const isAtBottom = target.scrollTop + target.clientHeight >= target.scrollHeight
   
   // Если скроллим внутри textarea и есть куда скроллить - останавливаем всплытие
   // Иначе позволяем событию дойти до канвы для зума
@@ -1322,6 +1387,8 @@ const onTextareaWheel = (e) => {
 // Синхронизация
 watch(() => props.modelValue, (newVal) => {
   if (props.isResult) {
+    isResultJsonMode.value = newVal.isResultJsonMode || false
+  } else if (props.isGeneration) {
     isJsonMode.value = newVal.jsonMode || false
   } else if (props.isCharacter) {
     // Для персонажа localDescription синхронизируется отдельным watch

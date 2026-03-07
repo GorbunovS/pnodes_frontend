@@ -4,8 +4,7 @@ import {
   cameraPresets, 
   environmentPresets,
   stylePresets,
-  moodPresets,
-  generationPresets
+  moodPresets
 } from './nodePresets.js'
 import {
   skinPresets,
@@ -74,8 +73,6 @@ export const nodeTypes = {
   EYES: 'eyes',
   MOUTH: 'mouth',
   HAIR: 'hair',
-  PHOTO: 'photo',
-  VIDEO: 'video',
   COMPOSER: 'composer',
   RESULT: 'result',
   GENERATION: 'generation'
@@ -130,7 +127,7 @@ export const nodeCategories = {
     name: 'Генерация',
     icon: 'pi pi-sparkles',
     color: '#6ee7b7', // мятный
-    types: [nodeTypes.PHOTO, nodeTypes.VIDEO, nodeTypes.GENERATION]
+    types: [nodeTypes.GENERATION]
   }
 }
 
@@ -148,8 +145,6 @@ export const connectionRules = {
   [nodeTypes.EYES]: [nodeTypes.CHARACTER],
   [nodeTypes.MOUTH]: [nodeTypes.CHARACTER],
   [nodeTypes.HAIR]: [nodeTypes.CHARACTER],
-  [nodeTypes.PHOTO]: [nodeTypes.COMPOSER],
-  [nodeTypes.VIDEO]: [nodeTypes.COMPOSER],
   [nodeTypes.COMPOSER]: [nodeTypes.RESULT, nodeTypes.GENERATION],
   [nodeTypes.GENERATION]: [] // Output node - no outgoing connections
 }
@@ -433,42 +428,6 @@ export const nodeConfigs = {
   },
   
   // === ГЕНЕРАЦИЯ (заглушки) ===
-  [nodeTypes.PHOTO]: {
-    name: 'Фото',
-    type: nodeTypes.PHOTO,
-    category: 'generation',
-    icon: 'pi pi-image',
-    color: '#6ee7b7',
-    hasDescription: false,
-    hasInput: false,
-    hasOutput: true,
-    outputType: nodeTypes.PHOTO,
-    maxTags: 0,
-    disabled: true,
-    tags: [],
-    subTypes: {
-      photo: { name: 'Фото', tags: generationPresets.photo }
-    }
-  },
-  
-  [nodeTypes.VIDEO]: {
-    name: 'Видео',
-    type: nodeTypes.VIDEO,
-    category: 'generation',
-    icon: 'pi pi-video',
-    color: '#6ee7b7',
-    hasDescription: false,
-    hasInput: false,
-    hasOutput: true,
-    outputType: nodeTypes.VIDEO,
-    maxTags: 0,
-    disabled: true,
-    tags: [],
-    subTypes: {
-      video: { name: 'Видео', tags: generationPresets.video }
-    }
-  },
-  
   // === СИСТЕМНЫЕ ===
   [nodeTypes.COMPOSER]: {
     name: 'Композитор',
@@ -516,8 +475,7 @@ export const nodeConfigs = {
     icon: 'pi pi-sparkles',
     color: '#10b981', // emerald-500
     hasInput: true,
-    acceptsFrom: [nodeTypes.COMPOSER, nodeTypes.CHARACTER, nodeTypes.LIGHTING, nodeTypes.ENVIRONMENT, nodeTypes.CAMERA, nodeTypes.STYLE, nodeTypes.MOOD],
-    acceptAnyInput: true, // Может принимать от любой ноды с промптом
+    acceptsFrom: [nodeTypes.COMPOSER],
     hasOutput: false,
     hasDescription: true,
     isGeneration: true, // Флаг для UI
