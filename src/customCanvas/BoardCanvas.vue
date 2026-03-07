@@ -164,6 +164,7 @@ const props = defineProps({
   scale: { type: Number, default: 1 },
   panX: { type: Number, default: 0 },
   panY: { type: Number, default: 0 },
+  sessionId: { type: String, default: 'default' }
 })
 
 const emit = defineEmits(['centerCanvas'])

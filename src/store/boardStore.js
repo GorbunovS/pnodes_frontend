@@ -21,6 +21,7 @@ export const useBoardStore = defineStore('board', () => {
   const nextZIndex = ref(1)
   const clipboard = ref(null)
   const selectedNodeIds = ref(new Set())
+  const currentSessionId = ref('default')
   
   // === HINTS SYSTEM ===
   const hintMode = ref(true)
@@ -258,8 +259,11 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   // === SESSION ===
+  const getSessionKey = (sessionId) => `canvasState_${sessionId || currentSessionId.value}`
+  
   const saveToSession = () => {
-    sessionStorage.setItem('boardState', JSON.stringify({
+    const key = getSessionKey()
+    localStorage.setItem(key, JSON.stringify({
       nodes: nodes.value.map(n => ({ id: n.id, type: n.type, x: n.x, y: n.y, zIndex: n.zIndex, data: n.data })),
       connections: connections.value,
       nextNodeId: nextNodeId.value,
@@ -268,7 +272,8 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   const loadFromSession = () => {
-    const saved = sessionStorage.getItem('boardState')
+    const key = getSessionKey()
+    const saved = localStorage.getItem(key)
     if (!saved) { loadDefault(); return }
     try {
       const state = JSON.parse(saved)
@@ -279,6 +284,39 @@ export const useBoardStore = defineStore('board', () => {
       clearSelection()
       historyStore.init({ nodes: JSON.parse(JSON.stringify(nodes.value)), connections: JSON.parse(JSON.stringify(connections.value)), nextNodeId: nextNodeId.value, nextZIndex: nextZIndex.value })
     } catch (e) { loadDefault() }
+  }
+  
+  // Загрузить конкретную сессию
+  const loadSession = (sessionId) => {
+    currentSessionId.value = sessionId
+    const key = getSessionKey(sessionId)
+    const saved = localStorage.getItem(key)
+    
+    // Сбрасываем состояние
+    nodes.value = []
+    connections.value = []
+    nextNodeId.value = 1
+    nextZIndex.value = 1
+    clearSelection()
+    
+    if (!saved) {
+      // Новая сессия - создаём пустое состояние
+      historyStore.init({ nodes: [], connections: [], nextNodeId: 1, nextZIndex: 1 })
+      saveToSession()
+      return
+    }
+    
+    try {
+      const state = JSON.parse(saved)
+      nodes.value = state.nodes.map(n => ({ ...n, config: getNodeConfig(n.type) }))
+      connections.value = state.connections || []
+      nextNodeId.value = state.nextNodeId || 1
+      nextZIndex.value = state.nextZIndex || 1
+      historyStore.init({ nodes: JSON.parse(JSON.stringify(nodes.value)), connections: JSON.parse(JSON.stringify(connections.value)), nextNodeId: nextNodeId.value, nextZIndex: nextZIndex.value })
+    } catch (e) {
+      console.error('Failed to load session:', e)
+      loadDefault()
+    }
   }
 
   const loadDefault = () => {
@@ -307,8 +345,9 @@ export const useBoardStore = defineStore('board', () => {
     bringToFront, sendToBack,
     createConnection, deleteConnectionsFromOutput, deleteConnectionsToInput, deleteConnectionById,
     copySelectedNodes, pasteNode,
-    loadFromSession, clearAll,
+    loadFromSession, loadSession, clearAll,
     saveState, undo, redo,
+    currentSessionId,
     canUndo: () => historyStore.canUndo(),
     canRedo: () => historyStore.canRedo(),
     // hints

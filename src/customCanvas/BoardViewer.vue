@@ -25,6 +25,7 @@
         :pan-x="x" 
         :pan-y="y" 
         :scale="scale" 
+        :session-id="sessionId"
         @center-canvas="onCenterCanvas"
       />
     </div>
@@ -43,15 +44,31 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import BoardCanvas from './BoardCanvas.vue'
 import NodePanel from './NodePanel.vue'
-import ActionPanel from './ActionPanel.vue'
+import { useBoardStore } from '../store/boardStore.js'
+
+const props = defineProps({
+  sessionId: {
+    type: String,
+    default: 'default'
+  }
+})
+
+const store = useBoardStore()
 
 const x = ref(0)
 const y = ref(0)
 const scale = ref(0.8)
 
-// Загрузка позиции из localStorage
+// Ключ для хранения viewport конкретной сессии
+const viewportKey = computed(() => `canvasViewport_${props.sessionId}`)
+
+// Загрузка позиции из localStorage для конкретной сессии
 onMounted(() => {
-  const savedViewport = localStorage.getItem('canvasViewport')
+  // Загружаем состояние сессии в store
+  store.loadSession(props.sessionId)
+  
+  // Загружаем viewport
+  const savedViewport = localStorage.getItem(viewportKey.value)
   if (savedViewport) {
     try {
       const { panX, panY, zoom } = JSON.parse(savedViewport)
@@ -60,14 +77,14 @@ onMounted(() => {
       scale.value = zoom
       clampPosition()
     } catch (e) {
-      console.log('Failed to load viewport')
+      console.log('Failed to load viewport for session', props.sessionId)
     }
   }
 })
 
 // Сохранение позиции при изменении
 watch([x, y, scale], () => {
-  localStorage.setItem('canvasViewport', JSON.stringify({
+  localStorage.setItem(viewportKey.value, JSON.stringify({
     panX: x.value,
     panY: y.value,
     zoom: scale.value
