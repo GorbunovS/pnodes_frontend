@@ -1,7 +1,8 @@
 <template>
   <div
     ref="boardContainer"
-    class="board-container w-full h-screen bg-zinc-950 overflow-hidden relative touch-none select-none"
+    class="board-container w-full h-screen bg-zinc-950 overflow-hidden relative touch-none select-none font-[Inter]"
+    style="font-family: 'Inter', system-ui, sans-serif;"
     @wheel.prevent="onWheel"
     @mousedown.middle.prevent="startPan"
     @mousemove="onMouseMove"
@@ -14,6 +15,7 @@
     <div
       ref="dragContainer"
       class="absolute will-change-transform origin-top-left transition-transform duration-150 ease-out"
+      style="font-family: inherit;"
       :style="{
         transform: `translate(${x}px, ${y}px) scale(${scale})`
       }"

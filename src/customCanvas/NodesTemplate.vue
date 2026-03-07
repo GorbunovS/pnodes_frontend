@@ -609,14 +609,8 @@ const displayPrompt = computed(() => {
   if (!props.composerData) return ''
   
   if (isJsonMode.value) {
-    // Формируем JSON с вложенной структурой
-    const json = {
-      prompt: props.composerData.structuredPrompts || [],
-      resolution: connectedComposerResolution.value || { width: 1024, height: 1024 },
-      n: 1,
-      quality: 'high'
-    }
-    return JSON.stringify(json, null, 2)
+    // Выводим структуру как есть
+    return JSON.stringify(props.composerData.structuredPrompts || {}, null, 2)
   }
   
   return connectedComposerPrompt.value

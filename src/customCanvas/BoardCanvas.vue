@@ -148,12 +148,16 @@ const getConnectedNodes = (composerNodeId) => {
   return connections.map(conn => {
     const fromNode = store.getNodeById(conn.fromNodeId)
     if (!fromNode) return null
+    const tagsPrompt = fromNode.data?.tags?.map(t => t.prompt).join(', ') || ''
+    const description = fromNode.data?.description || ''
     return {
       nodeId: fromNode.id,
       name: fromNode.config?.name || fromNode.name,
       color: fromNode.config?.color || '#6ee7b7',
       type: fromNode.type,
-      prompt: fromNode.data?.tags?.map(t => t.prompt).join(', ') || ''
+      prompt: [tagsPrompt, description].filter(Boolean).join(', '),
+      tags: tagsPrompt,
+      description: description
     }
   }).filter(Boolean)
 }
@@ -170,32 +174,41 @@ const getComposerDataForResult = (resultNodeId) => {
   const enabledSources = composerNode.data?.enabledSources || {}
   const resolution = composerNode.data?.resolution || { width: 1024, height: 1024 }
   const masterPrompt = composerNode.data?.masterPrompt || ''
+  const composerDescription = composerNode.data?.description || ''
   
   // Получаем подключенные ноды композитора
   const sourceNodes = getConnectedNodes(composerNode.id)
+  const enabledNodes = sourceNodes.filter(source => enabledSources[source.nodeId] !== false)
   
-  // Формируем массив промптов с типами для JSON
-  const structuredPrompts = sourceNodes
-    .filter(source => enabledSources[source.nodeId] !== false)
-    .map(source => ({
-      [source.type]: source.prompt
-    }))
+  // Строим структуру: каждая нода как ключ с типом
+  const subNodes = {}
+  enabledNodes.forEach(node => {
+    subNodes[node.type] = {
+      value: node.tags,
+      description: node.description
+    }
+  })
   
-  // Добавляем мастер промпт как отдельный тип
-  if (masterPrompt) {
-    structuredPrompts.push({ master: masterPrompt })
+  // Корневая структура — композитор
+  const resultStructure = {
+    composer: {
+      description: composerDescription,
+      masterPrompt: masterPrompt,
+      ...subNodes
+    },
+    resolution
   }
   
   // Формируем строковый промпт для текстового режима
-  const textPrompt = sourceNodes
-    .filter(source => enabledSources[source.nodeId] !== false)
+  const textPrompt = enabledNodes
     .map(source => source.prompt)
     .filter(Boolean)
+    .concat(masterPrompt)
     .join(', ')
   
   return {
     prompt: textPrompt,
-    structuredPrompts,
+    structuredPrompts: resultStructure,
     resolution
   }
 }
