@@ -42,6 +42,7 @@
           <stop offset="100%" :stop-color="getConnectionTargetColor(conn)" />
         </linearGradient>
       </defs>
+      <!-- Видимая линия связи (без pointer-events) -->
       <path
         v-for="conn in store.connections"
         :key="`${conn.id}-${props.scale}-${props.panX}-${props.panY}`"
@@ -50,9 +51,7 @@
         stroke-width="4"
         fill="none"
         stroke-linecap="round"
-        class="connection-line cursor-pointer"
-        style="pointer-events: stroke;"
-        @click="(e) => onConnectionClick(e, conn)"
+        style="pointer-events: none;"
       />
       <!-- Видимая тонкая линия поверх -->
       <path
@@ -66,7 +65,48 @@
         class="drop-shadow-md"
         style="pointer-events: none;"
       />
+      
+      <!-- Невидимая толстая линия для ховера (проще попасть) -->
+      <path
+        v-for="conn in store.connections"
+        :key="`hit-${conn.id}`"
+        :d="getPath(conn)"
+        stroke="transparent"
+        stroke-width="20"
+        fill="none"
+        class="cursor-pointer"
+        style="pointer-events: stroke;"
+        @mouseenter="hoveredConnection = conn"
+        @mouseleave="clearHovered"
+        @click="(e) => onConnectionClick(e, conn)"
+      />
     </svg>
+
+    <!-- Кнопка удаления связи (по центру) -->
+    <div
+      v-if="hoveredConnection"
+      v-motion
+      :initial="{ scale: 0, opacity: 0 }"
+      :enter="{ scale: 1, opacity: 1 }"
+      :leave="{ scale: 0, opacity: 0 }"
+      :duration="150"
+      class="absolute z-50"
+      :style="{
+        left: getConnectionMidpoint(hoveredConnection).x + 'px',
+        top: getConnectionMidpoint(hoveredConnection).y + 'px',
+        transform: 'translate(-50%, -50%)'
+      }"
+      @mouseenter="keepHovered"
+      @mouseleave="clearHovered"
+    >
+      <button
+        class="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-600 flex items-center justify-center shadow-lg hover:bg-red-500/20 hover:border-red-500 hover:text-red-400 text-zinc-400 transition-all duration-150 cursor-pointer"
+        @click="deleteConnection(hoveredConnection.id)"
+        title="Удалить связь"
+      >
+        <i class="pi pi-trash text-xs"></i>
+      </button>
+    </div>
 
     <!-- Ноды -->
     <div
@@ -132,6 +172,64 @@ const isInputFocused = ref(false)
 
 const onNodeFocusChange = (focused) => {
   isInputFocused.value = focused
+}
+
+// === УПРАВЛЕНИЕ СВЯЗЯМИ ===
+const hoveredConnection = ref(null)
+let hoverTimeout = null
+
+// Получить середину связи (для позиционирования кнопки удаления)
+const getConnectionMidpoint = (conn) => {
+  const fromNode = store.getNodeById(conn.fromNodeId)
+  const toNode = store.getNodeById(conn.toNodeId)
+  
+  if (!fromNode || !toNode) return { x: 0, y: 0 }
+  
+  const isFromComposer = fromNode.config?.isComposer
+  const isFromResult = fromNode.config?.isResult
+  const fromWidth = isFromComposer ? 340 : (isFromResult ? 380 : 320)
+  
+  const x1 = fromNode.x + fromWidth
+  const y1 = fromNode.y
+  const x2 = toNode.x
+  const y2 = toNode.y
+  
+  // Для кубической Безье берём точку при t=0.5
+  const dx = x2 - x1
+  const tension = Math.max(Math.abs(dx) * 0.5, 100)
+  
+  // Координаты контрольных точек
+  const cp1x = x1 + tension
+  const cp1y = y1
+  const cp2x = x2 - tension
+  const cp2y = y2
+  
+  // Точка на кривой Безье при t=0.5
+  const t = 0.5
+  const mt = 1 - t
+  
+  const x = mt * mt * mt * x1 + 3 * mt * mt * t * cp1x + 3 * mt * t * t * cp2x + t * t * t * x2
+  const y = mt * mt * mt * y1 + 3 * mt * mt * t * cp1y + 3 * mt * t * t * cp2y + t * t * t * y2
+  
+  return { x, y }
+}
+
+// Удержание ховера для кнопки
+const keepHovered = () => {
+  if (hoverTimeout) clearTimeout(hoverTimeout)
+}
+
+// Очистка ховера с задержкой
+const clearHovered = () => {
+  hoverTimeout = setTimeout(() => {
+    hoveredConnection.value = null
+  }, 100)
+}
+
+// Удаление связи
+const deleteConnection = (connectionId) => {
+  store.deleteConnectionById(connectionId)
+  hoveredConnection.value = null
 }
 
 const hasOutputConnection = (nodeId, idx) => {

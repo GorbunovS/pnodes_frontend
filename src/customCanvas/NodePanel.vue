@@ -1,7 +1,8 @@
 <template>
   <Panel 
     header="Библиотека нод"
-    class="absolute top-5 left-5 w-72 max-h-[calc(100vh-2.5rem)] flex flex-col z-50 border border-zinc-800 text-white backdrop-blur-md shadow-2xl rounded-xl"
+    class="absolute top-5 left-5 z-50 border border-zinc-800 text-white backdrop-blur-md shadow-2xl rounded-xl overflow-hidden"
+    style="width: 280px; max-height: 75vh;"
   >
     <template #icons>
       <span class="text-[10px] text-zinc-500 px-2 py-0.5 rounded-full border border-zinc-700 mr-2">
@@ -9,9 +10,9 @@
       </span>
     </template>
 
-    <div class="flex flex-col h-full">
+    <div class="flex flex-col h-full overflow-hidden" style="max-height: calc(75vh - 50px);">
       <!-- === ПОИСК === -->
-      <div class="p-2 border-b border-zinc-800">
+      <div class="p-2 border-b border-zinc-800 shrink-0">
         <div class="relative">
           <i class="pi pi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 text-xs"></i>
           <input
@@ -33,7 +34,7 @@
       </div>
 
       <!-- === БАЗОВЫЕ НОДЫ === -->
-      <div class="p-2 border-b border-zinc-800">
+      <div class="p-2 border-b border-zinc-800 shrink-0">
         <div class="text-[10px] text-zinc-500 mb-2 px-1">Базовые</div>
         <div class="grid grid-cols-2 gap-2">
           <div 
@@ -65,7 +66,7 @@
       </div>
 
       <!-- === СЕКЦИЯ "МОЖНО ПОДКЛЮЧИТЬ" (когда есть activeSource) === -->
-      <div v-if="store.activeSource && compatibleNodes.length > 0" class="p-2 border-b border-zinc-800 bg-zinc-800/20">
+      <div v-if="store.activeSource && compatibleNodes.length > 0" class="p-2 border-b border-zinc-800 bg-zinc-800/20 shrink-0 max-h-40 overflow-y-auto">
         <div class="flex items-center gap-2 mb-2">
           <div 
             class="w-2 h-2 rounded-full animate-pulse"
@@ -230,7 +231,7 @@
       </div>
 
       <!-- === НИЖНЯЯ ПАНЕЛЬ === -->
-      <div class="p-2 border-t border-zinc-800 space-y-2">
+      <div class="p-2 border-t border-zinc-800 space-y-2 shrink-0 bg-zinc-900/50">
         <!-- Тумблер подсказок -->
         <div class="flex items-center justify-between px-2 py-1.5 bg-zinc-800/30 rounded-lg">
           <span class="text-[11px] text-zinc-400">Подсказки</span>

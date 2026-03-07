@@ -100,6 +100,7 @@
       :data-type="outputType"
       @pointerdown.stop="onOutputPointerDown"
       @click.stop="onOutputClick"
+      @dblclick.stop="onOutputDblClick"
     >
       <!-- Активный: маленький ромбик внутри -->
       <div 
@@ -124,6 +125,7 @@
       data-idx="0"
       :data-type="inputType"
       @click.stop="onInputClick"
+      @dblclick.stop="onInputDblClick"
     >
     </div>
 
@@ -231,6 +233,7 @@
       data-idx="0"
       :data-type="inputType"
       @click.stop="onInputClick"
+      @dblclick.stop="onInputDblClick"
     >
     </div>
 
@@ -330,6 +333,7 @@
       data-idx="0"
       :data-type="outputType"
       @click.stop="onOutputClick"
+      @dblclick.stop="onOutputDblClick"
     >
       <!-- Активный: маленький ромбик внутри -->
       <div 
@@ -382,6 +386,7 @@
       data-idx="0"
       :data-type="inputType"
       @click.stop="onInputClick"
+      @dblclick.stop="onInputDblClick"
     >
     </div>
 
@@ -770,6 +775,16 @@ const onOutputClick = (e) => {
     return
   }
   emit('portClick', e, 'output', 0, props.outputType, props.nodeId)
+}
+const onOutputDblClick = () => {
+  // Двойной клик на output - удалить все связи
+  emit('deleteOutputConnections', props.nodeId, 0)
+}
+const onInputDblClick = () => {
+  // Двойной клик на input - удалить все связи
+  if (props.hasInputConnection) {
+    emit('deleteInputConnections', props.nodeId, 0)
+  }
 }
 
 // === ГЕНЕРАЦИЯ ПРОМПТА ===
