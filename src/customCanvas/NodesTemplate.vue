@@ -111,10 +111,12 @@
     <div 
       v-if="hasInput"
       class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      :class="{ 'input-pulse': isInputCompatible }"
       :style="{ 
         backgroundColor: hasInputConnection ? nodeColor : '#18181b',
-        border: `2px solid ${nodeColor}`,
-        opacity: '1'
+        border: `2px solid ${isInputCompatible ? pulseColor : nodeColor}`,
+        opacity: '1',
+        boxShadow: isInputCompatible ? `0 0 15px ${pulseColor}, 0 0 30px ${pulseColor}80` : 'none'
       }"
       :data-port="'input'"
       data-idx="0"
@@ -216,10 +218,12 @@
     <div 
       v-if="hasInput"
       class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      :class="{ 'input-pulse': isInputCompatible }"
       :style="{ 
         backgroundColor: hasInputConnection ? nodeColor : '#18181b',
-        border: `2px solid ${nodeColor}`,
-        opacity: '1'
+        border: `2px solid ${isInputCompatible ? pulseColor : nodeColor}`,
+        opacity: '1',
+        boxShadow: isInputCompatible ? `0 0 15px ${pulseColor}, 0 0 30px ${pulseColor}80` : 'none'
       }"
       :data-port="'input'"
       data-idx="0"
@@ -364,10 +368,12 @@
       v-if="hasInput"
       ref="inputPortRef"
       class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      :class="{ 'input-pulse': isInputCompatible }"
       :style="{ 
         backgroundColor: hasInputConnection ? nodeColor : '#18181b',
-        border: `2px solid ${nodeColor}`,
-        opacity: '1'
+        border: `2px solid ${isInputCompatible ? pulseColor : nodeColor}`,
+        opacity: '1',
+        boxShadow: isInputCompatible ? `0 0 15px ${pulseColor}, 0 0 30px ${pulseColor}80` : 'none'
       }"
       :data-port="'input'"
       data-idx="0"
@@ -450,10 +456,14 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
+import { useBoardStore } from '../store/boardStore.js'
+import { canConnect } from '../data/nodeConfig.js'
+import { useMotion } from '@vueuse/motion'
 
 const props = defineProps({
   // Общие пропсы
   nodeId: Number,
+  nodeType: String,
   title: String,
   nodeColor: { type: String, default: '#6ee7b7' },
   isSelected: { type: Boolean, default: false },
@@ -482,6 +492,8 @@ const props = defineProps({
   hasOutput: { type: Boolean, default: true },
   inputType: { type: String, default: 'prompt' },
   outputType: { type: String, default: 'prompt' },
+  acceptsFrom: { type: Array, default: null },
+  acceptAnyInput: { type: Boolean, default: false },
   
   // v-model
   modelValue: { type: Object, default: () => ({}) }
@@ -495,6 +507,53 @@ const emit = defineEmits([
   'deleteOutputConnections',
   'focusChange'
 ])
+
+// === HINTS SYSTEM ===
+const store = useBoardStore()
+
+// Проверяем, может ли инпут этой ноды принять соединение от активного source
+const isInputCompatible = computed(() => {
+  if (!store.activeSource || !props.hasInput) return false
+  if (props.nodeId === store.activeSource.nodeId) return false // Нельзя подключить саму к себе
+  if (props.hasInputConnection && !props.isComposer) return false // Уже подключен (кроме композитора)
+  
+  const toConfig = {
+    hasInput: props.hasInput,
+    isComposer: props.isComposer,
+    acceptsFrom: props.acceptsFrom,
+    acceptAnyInput: props.acceptAnyInput
+  }
+  
+  return canConnect(store.activeSource.nodeType, props.nodeType, toConfig)
+})
+
+// Цвет для пульсации
+const pulseColor = computed(() => store.activeSource?.color || props.nodeColor)
+
+// === MOTION для анимации портов ===
+const inputPortRef = ref(null)
+const { variant } = useMotion(inputPortRef, {
+  initial: { scale: 1, opacity: 1 },
+  pulse: { 
+    scale: 1.3, 
+    opacity: 0.8,
+    transition: {
+      duration: 500,
+      repeat: Infinity,
+      repeatType: 'mirror',
+      ease: 'easeInOut'
+    }
+  }
+})
+
+// Запускаем/останавливаем анимацию
+watch(isInputCompatible, (compatible) => {
+  if (compatible) {
+    variant.value = 'pulse'
+  } else {
+    variant.value = 'initial'
+  }
+}, { immediate: true })
 
 // === ОБЫЧНАЯ НОДА ===
 const localTags = ref(props.modelValue.tags || [])
@@ -513,7 +572,7 @@ const isJsonMode = ref(props.modelValue.jsonMode || false)
 // === REFS для нод и портов ===
 const nodeRef = ref(null)
 const outputPortRef = ref(null)
-const inputPortRef = ref(null)
+// inputPortRef объявлен выше для useMotion
 
 // === Методы для получения позиций портов ===
 const getOutputPortPosition = () => {
@@ -765,5 +824,22 @@ defineExpose({
 ::-webkit-scrollbar-thumb {
   background: #52525b;
   border-radius: 3px;
+}
+
+/* Анимация пульсации для подсказок */
+@keyframes input-pulse {
+  0%, 100% {
+    transform: rotate(45deg) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: rotate(45deg) scale(1.3);
+    opacity: 0.8;
+  }
+}
+
+.input-pulse {
+  animation: input-pulse 1s ease-in-out infinite !important;
+  z-index: 100 !important;
 }
 </style>

@@ -20,6 +20,7 @@
     "baklavajs": "^2.8.1",
     "flowbite": "^4.0.1",
     "flowbite-vue": "^0.2.2",
+    "motion": "^12.35.0",
     "pinia": "^3.0.4",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.4",

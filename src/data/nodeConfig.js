@@ -24,6 +24,11 @@ export const connectionRules = {
 
 // Проверить можно ли соединить два типа
 export const canConnect = (fromType, toType, toConfig = null) => {
+  // Если целевая нода принимает любой input
+  if (toConfig?.acceptAnyInput) {
+    return true
+  }
+  
   // Если у целевой ноды указан acceptsFrom - используем его
   if (toConfig?.acceptsFrom) {
     return toConfig.acceptsFrom.includes(fromType)
@@ -114,7 +119,8 @@ export const nodeConfigs = {
     hasDescription: false,
     hasInput: true,
     inputType: 'any',
-    acceptsFrom: [nodeTypes.LIGHTING, nodeTypes.CAMERA, nodeTypes.STYLE, nodeTypes.ENVIRONMENT, nodeTypes.MOOD], // Кого принимает
+    acceptAnyInput: true, // Принимает любые типы нод
+    acceptsFrom: [nodeTypes.LIGHTING, nodeTypes.CAMERA, nodeTypes.STYLE, nodeTypes.ENVIRONMENT, nodeTypes.MOOD],
     hasOutput: true,
     outputType: nodeTypes.COMPOSER,
     maxTags: 0,

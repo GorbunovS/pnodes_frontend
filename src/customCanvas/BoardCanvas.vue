@@ -81,6 +81,7 @@
     >
       <NodesTemplate
         :node-id="node.id"
+        :node-type="node.type"
         :title="node.config?.name || node.name"
         :node-color="node.config?.color || '#6ee7b7'"
         :tags="node.config?.tags || []"
@@ -90,6 +91,8 @@
         :has-description="node.config?.hasDescription ?? true"
         :has-output="node.config?.hasOutput ?? true"
         :has-input="node.config?.hasInput ?? false"
+        :accepts-from="node.config?.acceptsFrom"
+        :accept-any-input="node.config?.acceptAnyInput ?? false"
         :output-type="node.config?.outputType"
         :has-output-connection="hasOutputConnection(node.id, 0)"
         :has-input-connection="hasInputConnection(node.id, 0)"
@@ -240,6 +243,11 @@ const onCanvasPointerDown = (e) => {
     return
   }
   
+  // Сбрасываем подсказки при клике на пустое место
+  if (!e.target.closest('[data-id]')) {
+    store.clearActiveSource()
+  }
+  
   if (e.target.closest('[data-id]')) return
   
   if (!(e.ctrlKey || e.metaKey)) store.clearSelection()
@@ -381,6 +389,13 @@ const onNodeDragUp = () => {
 const handlePortClick = (e, type, idx, portType, nodeId) => {
   if (!clickSource.value) {
     if (type !== 'output') return
+    
+    const node = store.getNodeById(nodeId)
+    if (node) {
+      // Активируем подсказки
+      store.setActiveSource(nodeId, node.type, node.config?.color || '#6ee7b7')
+    }
+    
     clickSource.value = { nodeId, idx, portType }
     if (!store.isSelected(nodeId)) store.selectNode(nodeId, false)
   } else {
@@ -388,6 +403,7 @@ const handlePortClick = (e, type, idx, portType, nodeId) => {
     
     if (type !== 'input' || nodeId === source.nodeId) {
       clickSource.value = null
+      store.clearActiveSource()
       return
     }
     
@@ -397,6 +413,7 @@ const handlePortClick = (e, type, idx, portType, nodeId) => {
     
     if (!fromNode || !toNode) {
       clickSource.value = null
+      store.clearActiveSource()
       return
     }
     
@@ -406,11 +423,13 @@ const handlePortClick = (e, type, idx, portType, nodeId) => {
     if (!canConnect(fromType, toType, toNode.config)) {
       console.log('Cannot connect', fromType, 'to', toType)
       clickSource.value = null
+      store.clearActiveSource()
       return
     }
     
     store.createConnection(source.nodeId, source.idx, nodeId, idx)
     clickSource.value = null
+    store.clearActiveSource()
   }
 }
 
@@ -459,8 +478,12 @@ const getPath = (conn) => {
 // === KEYBOARD ===
 const handleKeyDown = (e) => {
   if (e.key === 'Escape') {
-    if (clickSource.value) clickSource.value = null
-    else store.clearSelection()
+    if (clickSource.value) {
+      clickSource.value = null
+      store.clearActiveSource()
+    } else {
+      store.clearSelection()
+    }
     return
   }
 

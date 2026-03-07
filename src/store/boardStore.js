@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useHistoryStore } from './historyStore'
-import { nodeConfigs, getNodeConfig, nodeTypes } from '../data/nodeConfig.js'
+import { nodeConfigs, getNodeConfig, nodeTypes, canConnect } from '../data/nodeConfig.js'
 
 const CANVAS_WIDTH = 6000
 const CANVAS_HEIGHT = 4000
@@ -19,6 +19,10 @@ export const useBoardStore = defineStore('board', () => {
   const nextZIndex = ref(1)
   const clipboard = ref(null)
   const selectedNodeIds = ref(new Set())
+  
+  // === HINTS SYSTEM ===
+  const hintMode = ref(true)
+  const activeSource = ref(null) // { nodeId, nodeType, color } или null
 
   // === GETTERS ===
   const getNodeById = (id) => nodes.value.find(n => n.id === id)
@@ -56,6 +60,46 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   const isSelected = (nodeId) => selectedNodeIds.value.has(nodeId)
+  
+  // === HINTS ===
+  const setActiveSource = (nodeId, nodeType, color) => {
+    if (!hintMode.value) return
+    activeSource.value = { nodeId, nodeType, color }
+  }
+  
+  const clearActiveSource = () => {
+    activeSource.value = null
+  }
+  
+  const toggleHintMode = () => {
+    hintMode.value = !hintMode.value
+    if (!hintMode.value) clearActiveSource()
+  }
+  
+  // Ноды, у которых есть инпуты, совместимые с активным source
+  const compatibleNodesOnCanvas = computed(() => {
+    if (!activeSource.value) return []
+    return nodes.value.filter(node => {
+      const config = node.config
+      if (!config?.hasInput) return false
+      return canConnect(activeSource.value.nodeType, node.type, config)
+    }).map(n => n.id)
+  })
+  
+  // Типы нод, которые можно создать (для подсветки библиотеки)
+  const compatibleTypesInLibrary = computed(() => {
+    if (!activeSource.value) return []
+    const availableTypes = Object.values(nodeTypes)
+    return availableTypes.filter(type => {
+      const config = getNodeConfig(type)
+      if (!config?.hasInput) return false
+      // Проверяем может ли этот тип принять соединение от activeSource
+      return canConnect(activeSource.value.nodeType, type, config)
+    })
+  })
+  
+  // Есть ли совместимые ноды на canvas'е
+  const hasCompatibleNodes = computed(() => compatibleNodesOnCanvas.value.length > 0)
 
   // === HISTORY ===
   const saveState = () => {
@@ -257,6 +301,9 @@ export const useBoardStore = defineStore('board', () => {
     loadFromSession, clearAll,
     saveState, undo, redo,
     canUndo: () => historyStore.canUndo(),
-    canRedo: () => historyStore.canRedo()
+    canRedo: () => historyStore.canRedo(),
+    // hints
+    hintMode, activeSource, compatibleNodesOnCanvas, compatibleTypesInLibrary, hasCompatibleNodes,
+    setActiveSource, clearActiveSource, toggleHintMode
   }
 })
