@@ -87,11 +87,13 @@
     <!-- Output порт (ромб в правом верхнем углу) -->
     <div 
       v-if="hasOutput"
-      class="absolute -right-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      class="absolute -right-3 -top-3 w-6 h-6 cursor-crosshair flex items-center justify-center transition-all duration-200 ease-out hover:scale-125"
+      :class="{ 'hover:shadow-lg': !isSource }"
       :style="{ 
         backgroundColor: hasOutputConnection ? nodeColor : '#18181b',
         border: `2px solid ${nodeColor}`,
-        opacity: '1'
+        opacity: '1',
+        boxShadow: isSource ? `0 0 10px ${nodeColor}` : 'none'
       }"
       :data-port="'output'"
       data-idx="0"
@@ -102,7 +104,7 @@
       <!-- Активный: маленький ромбик внутри -->
       <div 
         v-if="isSource"
-        class="w-2 h-2 -rotate-45"
+        class="w-2 h-2"
         :style="{ backgroundColor: nodeColor }"
       ></div>
     </div>
@@ -110,7 +112,7 @@
     <!-- Input порт (ромб в левом верхнем углу) -->
     <div 
       v-if="hasInput"
-      class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      class="absolute -left-3 -top-3 w-6 h-6 cursor-crosshair flex items-center justify-center transition-all duration-200 ease-out hover:scale-125 hover:shadow-lg"
       :class="{ 'input-pulse': isInputCompatible }"
       :style="{ 
         backgroundColor: hasInputConnection ? nodeColor : '#18181b',
@@ -217,7 +219,7 @@
     <!-- Input порт (ромб в левом верхнем углу) -->
     <div 
       v-if="hasInput"
-      class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      class="absolute -left-3 -top-3 w-6 h-6 cursor-crosshair flex items-center justify-center transition-all duration-200 ease-out hover:scale-125 hover:shadow-lg"
       :class="{ 'input-pulse': isInputCompatible }"
       :style="{ 
         backgroundColor: hasInputConnection ? nodeColor : '#18181b',
@@ -317,11 +319,12 @@
     <!-- Output порт (ромб в правом верхнем углу) -->
     <div 
       v-if="hasOutput"
-      class="absolute -right-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      class="absolute -right-3 -top-3 w-6 h-6 cursor-crosshair flex items-center justify-center transition-all duration-200 ease-out hover:scale-125 hover:shadow-lg"
       :style="{ 
         backgroundColor: hasOutputConnection ? nodeColor : '#18181b',
         border: `2px solid ${nodeColor}`,
-        opacity: '1'
+        opacity: '1',
+        boxShadow: isSource ? `0 0 10px ${nodeColor}` : 'none'
       }"
       :data-port="'output'"
       data-idx="0"
@@ -331,7 +334,7 @@
       <!-- Активный: маленький ромбик внутри -->
       <div 
         v-if="isSource"
-        class="w-2 h-2 -rotate-45"
+        class="w-2 h-2"
         :style="{ backgroundColor: nodeColor, opacity: '1' }"
       ></div>
     </div>
@@ -367,7 +370,7 @@
     <div 
       v-if="hasInput"
       ref="inputPortRef"
-      class="absolute -left-3 -top-3 w-6 h-6 rotate-45 cursor-crosshair transition flex items-center justify-center"
+      class="absolute -left-3 -top-3 w-6 h-6 cursor-crosshair flex items-center justify-center transition-all duration-200 ease-out hover:scale-125 hover:shadow-lg"
       :class="{ 'input-pulse': isInputCompatible }"
       :style="{ 
         backgroundColor: hasInputConnection ? nodeColor : '#18181b',
@@ -807,6 +810,39 @@ defineExpose({
   display: none !important;
   opacity: 0 !important;
   visibility: hidden !important;
+}
+
+/* Порты - всегда ромбы */
+[data-port] {
+  transform: rotate(45deg) !important;
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.2s ease-out;
+}
+
+[data-port]:hover {
+  transform: rotate(45deg) scale(1.25) !important;
+  z-index: 100;
+}
+
+/* Пульсация для совместимых инпутов - всегда ромб */
+@keyframes input-pulse {
+  0%, 100% {
+    transform: rotate(45deg) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: rotate(45deg) scale(1.3);
+    opacity: 0.9;
+  }
+}
+
+.input-pulse {
+  animation: input-pulse 1s ease-in-out infinite !important;
+  z-index: 100 !important;
+}
+
+/* Ховер во время пульсации - сохраняем ромб */
+.input-pulse:hover {
+  transform: rotate(45deg) scale(1.3) !important;
 }
 
 ::-webkit-scrollbar {
