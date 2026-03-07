@@ -513,7 +513,7 @@ const store = useBoardStore()
 
 // Проверяем, может ли инпут этой ноды принять соединение от активного source
 const isInputCompatible = computed(() => {
-  if (!store.activeSource || !props.hasInput) return false
+  if (!store.hintMode || !store.activeSource || !props.hasInput) return false
   if (props.nodeId === store.activeSource.nodeId) return false // Нельзя подключить саму к себе
   if (props.hasInputConnection && !props.isComposer) return false // Уже подключен (кроме композитора)
   

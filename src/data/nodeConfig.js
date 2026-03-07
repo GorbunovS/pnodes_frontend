@@ -1,126 +1,359 @@
 // === КОНФИГУРАЦИЯ НОД ===
+import { 
+  lightingPresets, 
+  cameraPresets, 
+  environmentPresets,
+  stylePresets,
+  moodPresets,
+  characterPresets,
+  generationPresets
+} from './nodePresets.js'
 
+// === ТИПЫ НОД (основные категории) ===
 export const nodeTypes = {
+  // Категория: Свет
   LIGHTING: 'lighting',
-  CAMERA: 'camera', 
-  STYLE: 'style',
+  
+  // Категория: Окружение  
   ENVIRONMENT: 'environment',
+  
+  // Категория: Камеры
+  CAMERA: 'camera',
+  LENS: 'lens',
+  
+  // Категория: Стиль
+  STYLE: 'style',
+  
+  // Категория: Настроение
   MOOD: 'mood',
+  
+  // Категория: Персонаж (заглушки)
+  CHARACTER_TEMPLATE: 'character_template',
+  FACE_CONSTRUCTOR: 'face_constructor',
+  
+  // Категория: Генерация (заглушки)
+  PHOTO: 'photo',
+  VIDEO: 'video',
+  
+  // Системные
   COMPOSER: 'composer',
   RESULT: 'result'
 }
 
-// Какие типы можно соединять друг с другом
+// === КАТЕГОРИИ ДЛЯ UI ===
+export const nodeCategories = {
+  LIGHTING: {
+    id: 'lighting',
+    name: 'Свет',
+    icon: 'pi pi-sun',
+    color: '#fbbf24', // янтарный
+    types: [nodeTypes.LIGHTING]
+  },
+  ENVIRONMENT: {
+    id: 'environment',
+    name: 'Окружение',
+    icon: 'pi pi-map',
+    color: '#86efac', // светло-зелёный
+    types: [nodeTypes.ENVIRONMENT]
+  },
+  CAMERAS: {
+    id: 'cameras',
+    name: 'Камеры',
+    icon: 'pi pi-camera',
+    color: '#f9a8d4', // розовый
+    types: [nodeTypes.CAMERA, nodeTypes.LENS]
+  },
+  STYLE: {
+    id: 'style',
+    name: 'Стиль',
+    icon: 'pi pi-palette',
+    color: '#c4b5fd', // фиолетовый
+    types: [nodeTypes.STYLE]
+  },
+  MOOD: {
+    id: 'mood',
+    name: 'Настроение',
+    icon: 'pi pi-heart',
+    color: '#fca5a5', // розово-красный
+    types: [nodeTypes.MOOD]
+  },
+  CHARACTER: {
+    id: 'character',
+    name: 'Персонаж',
+    icon: 'pi pi-user',
+    color: '#93c5fd', // голубой
+    types: [nodeTypes.CHARACTER_TEMPLATE, nodeTypes.FACE_CONSTRUCTOR],
+    disabled: true // Пока не готово
+  },
+  GENERATION: {
+    id: 'generation',
+    name: 'Генерация',
+    icon: 'pi pi-sparkles',
+    color: '#6ee7b7', // мятный
+    types: [nodeTypes.PHOTO, nodeTypes.VIDEO],
+    disabled: true // Пока не готово
+  }
+}
+
+// === ПРАВИЛА СОЕДИНЕНИЙ ===
 export const connectionRules = {
-  // Ноды с типами выше могут подключаться к COMPOSER
   [nodeTypes.LIGHTING]: [nodeTypes.COMPOSER],
-  [nodeTypes.CAMERA]: [nodeTypes.COMPOSER],
-  [nodeTypes.STYLE]: [nodeTypes.COMPOSER],
   [nodeTypes.ENVIRONMENT]: [nodeTypes.COMPOSER],
+  [nodeTypes.CAMERA]: [nodeTypes.COMPOSER],
+  [nodeTypes.LENS]: [nodeTypes.COMPOSER],
+  [nodeTypes.STYLE]: [nodeTypes.COMPOSER],
   [nodeTypes.MOOD]: [nodeTypes.COMPOSER],
-  // COMPOSER может подключаться к RESULT
+  [nodeTypes.CHARACTER_TEMPLATE]: [nodeTypes.COMPOSER],
+  [nodeTypes.FACE_CONSTRUCTOR]: [nodeTypes.COMPOSER],
+  [nodeTypes.PHOTO]: [nodeTypes.COMPOSER],
+  [nodeTypes.VIDEO]: [nodeTypes.COMPOSER],
   [nodeTypes.COMPOSER]: [nodeTypes.RESULT]
 }
 
-// Проверить можно ли соединить два типа
+// === ПРОВЕРКА СОЕДИНЕНИЯ ===
 export const canConnect = (fromType, toType, toConfig = null) => {
-  // Если целевая нода принимает любой input
-  if (toConfig?.acceptAnyInput) {
-    return true
-  }
+  if (toConfig?.acceptAnyInput) return true
+  if (toConfig?.acceptsFrom) return toConfig.acceptsFrom.includes(fromType)
   
-  // Если у целевой ноды указан acceptsFrom - используем его
-  if (toConfig?.acceptsFrom) {
-    return toConfig.acceptsFrom.includes(fromType)
-  }
-  
-  // Fallback на старые правила
   const allowed = connectionRules[fromType]
   return allowed ? allowed.includes(toType) : false
 }
 
-// === КОНФИГ НОД ===
+// === КОНФИГИ НОД ===
 export const nodeConfigs = {
+  // === СВЕТ ===
   [nodeTypes.LIGHTING]: {
-    name: 'Освещение',
+    name: 'Свет',
     type: nodeTypes.LIGHTING,
+    category: 'lighting',
     icon: 'pi pi-sun',
-    color: '#6ee7b7', // мятный
+    color: '#fbbf24',
     hasDescription: true,
     hasInput: false,
     hasOutput: true,
     outputType: nodeTypes.LIGHTING,
     maxTags: 5,
+    subTypes: {
+      artificial: { name: 'Искусственный', tags: lightingPresets.artificial },
+      studio: { name: 'Студийный', tags: lightingPresets.studio },
+      setup: { name: 'Схемы', tags: lightingPresets.setup },
+      direction: { name: 'Направление', tags: lightingPresets.direction },
+      quality: { name: 'Качество', tags: lightingPresets.quality },
+      natural: { name: 'Естественный', tags: lightingPresets.natural }
+    },
+    // Объединённые теги для совместимости
     tags: [
-      { id: 'sun_12', name: 'солнце на 12', prompt: 'sun at 12 o\'clock, overhead lighting' },
-      { id: 'sun_3', name: 'солнце на 3', prompt: 'sun at 3 o\'clock, side lighting from right' },
-      { id: 'sun_9', name: 'солнце на 9', prompt: 'sun at 9 o\'clock, side lighting from left' },
-      { id: 'sun_6', name: 'солнце на 6', prompt: 'sun at 6 o\'clock, backlighting' },
-      { id: 'softbox', name: 'софтбокс', prompt: 'softbox lighting, soft diffused light' },
-      { id: 'natural', name: 'естественный', prompt: 'natural lighting, ambient light' },
-      { id: 'dramatic', name: 'драматичный', prompt: 'dramatic lighting, high contrast' },
-      { id: 'studio', name: 'студийный', prompt: 'studio lighting, professional setup' },
-      { id: 'golden_hour', name: 'золотой час', prompt: 'golden hour lighting, warm sunset glow' },
-      { id: 'blue_hour', name: 'синий час', prompt: 'blue hour lighting, cool twilight' },
-      { id: 'rim_light', name: 'контровой', prompt: 'rim lighting, edge light silhouette' },
-      { id: 'butterfly', name: 'бабочка', prompt: 'butterfly lighting, glamour setup' }
+      ...lightingPresets.artificial,
+      ...lightingPresets.studio,
+      ...lightingPresets.setup,
+      ...lightingPresets.direction,
+      ...lightingPresets.quality,
+      ...lightingPresets.natural
     ]
   },
   
+  // === ОКРУЖЕНИЕ ===
+  [nodeTypes.ENVIRONMENT]: {
+    name: 'Окружение',
+    type: nodeTypes.ENVIRONMENT,
+    category: 'environment',
+    icon: 'pi pi-map',
+    color: '#86efac',
+    hasDescription: true,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.ENVIRONMENT,
+    maxTags: 3,
+    subTypes: {
+      studio: { name: 'Студии', tags: environmentPresets.studio },
+      interior: { name: 'Интерьеры', tags: environmentPresets.interior },
+      exterior: { name: 'Экстерьеры', tags: environmentPresets.exterior },
+      special: { name: 'Специальные', tags: environmentPresets.special }
+    },
+    tags: [
+      ...environmentPresets.studio,
+      ...environmentPresets.interior,
+      ...environmentPresets.exterior,
+      ...environmentPresets.special
+    ]
+  },
+  
+  // === КАМЕРА ===
   [nodeTypes.CAMERA]: {
     name: 'Камера',
     type: nodeTypes.CAMERA,
+    category: 'cameras',
     icon: 'pi pi-camera',
-    color: '#f9a8d4', // розовый
+    color: '#f9a8d4',
     hasDescription: true,
     hasInput: false,
     hasOutput: true,
     outputType: nodeTypes.CAMERA,
-    maxTags: 4,
-    tags: [
-      { id: 'fisheye', name: 'рыбкин глаз', prompt: 'fisheye lens, ultra wide angle' },
-      { id: 'anamorphic', name: 'анаморфный', prompt: 'anamorphic lens, cinematic aspect ratio' },
-      { id: 'wide', name: 'широкоугольный', prompt: 'wide angle lens, 24mm' },
-      { id: 'telephoto', name: 'телеобъектив', prompt: 'telephoto lens, 85mm, shallow depth of field' },
-      { id: 'macro', name: 'макро', prompt: 'macro lens, extreme close-up' },
-      { id: 'bokeh', name: 'боке', prompt: 'strong bokeh, blurred background' },
-      { id: 'tilt_shift', name: 'тилт-шифт', prompt: 'tilt-shift effect, miniature look' },
-      { id: 'vintage', name: 'винтаж', prompt: 'vintage lens, soft glow, chromatic aberration' }
-    ]
+    maxTags: 3,
+    subTypes: {
+      camera: { name: 'Типы камер', tags: cameraPresets.camera }
+    },
+    tags: cameraPresets.camera
   },
   
+  // === ЛИНЗА ===
+  [nodeTypes.LENS]: {
+    name: 'Линза',
+    type: nodeTypes.LENS,
+    category: 'cameras',
+    icon: 'pi pi-circle',
+    color: '#f472b6',
+    hasDescription: true,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.LENS,
+    maxTags: 2,
+    subTypes: {
+      lens: { name: 'Оптика', tags: cameraPresets.lens }
+    },
+    tags: cameraPresets.lens
+  },
+  
+  // === СТИЛЬ ===
   [nodeTypes.STYLE]: {
     name: 'Стиль',
     type: nodeTypes.STYLE,
+    category: 'style',
     icon: 'pi pi-palette',
-    color: '#c4b5fd', // фиолетовый
+    color: '#c4b5fd',
     hasDescription: true,
     hasInput: false,
     hasOutput: true,
     outputType: nodeTypes.STYLE,
     maxTags: 3,
+    subTypes: {
+      digital: { name: 'Digital', tags: stylePresets.digital },
+      traditional: { name: 'Традиционный', tags: stylePresets.traditional },
+      stylized: { name: 'Стилизованный', tags: stylePresets.stylized },
+      cinematic: { name: 'Кинематографичный', tags: stylePresets.cinematic }
+    },
     tags: [
-      { id: 'cinematic', name: 'кинематографичный', prompt: 'cinematic, film grain, color graded' },
-      { id: 'anime', name: 'аниме', prompt: 'anime style, manga illustration' },
-      { id: 'photorealistic', name: 'фотореализм', prompt: 'photorealistic, hyper detailed, 8k' },
-      { id: 'oil_painting', name: 'масло', prompt: 'oil painting, traditional art, visible brushstrokes' },
-      { id: 'watercolor', name: 'акварель', prompt: 'watercolor painting, soft edges, paper texture' },
-      { id: 'sketch', name: 'скетч', prompt: 'pencil sketch, line art, monochrome' },
-      { id: '3d_render', name: '3D рендер', prompt: '3D render, octane, blender, perfect lighting' },
-      { id: 'pixel_art', name: 'пиксель-арт', prompt: 'pixel art, retro game style, limited palette' }
+      ...stylePresets.digital,
+      ...stylePresets.traditional,
+      ...stylePresets.stylized,
+      ...stylePresets.cinematic
     ]
   },
   
+  // === НАСТРОЕНИЕ ===
+  [nodeTypes.MOOD]: {
+    name: 'Настроение',
+    type: nodeTypes.MOOD,
+    category: 'mood',
+    icon: 'pi pi-heart',
+    color: '#fca5a5',
+    hasDescription: true,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.MOOD,
+    maxTags: 2,
+    subTypes: {
+      emotion: { name: 'Эмоции', tags: moodPresets.emotion }
+    },
+    tags: moodPresets.emotion
+  },
+  
+  // === ПЕРСОНАЖ (заглушки) ===
+  [nodeTypes.CHARACTER_TEMPLATE]: {
+    name: 'Шаблон персонажа',
+    type: nodeTypes.CHARACTER_TEMPLATE,
+    category: 'character',
+    icon: 'pi pi-user',
+    color: '#93c5fd',
+    hasDescription: true,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.CHARACTER_TEMPLATE,
+    maxTags: 0,
+    disabled: true,
+    tags: [],
+    subTypes: {
+      template: { name: 'Шаблоны', tags: characterPresets.template }
+    }
+  },
+  
+  [nodeTypes.FACE_CONSTRUCTOR]: {
+    name: 'Конструктор лица',
+    type: nodeTypes.FACE_CONSTRUCTOR,
+    category: 'character',
+    icon: 'pi pi-face-smile',
+    color: '#93c5fd',
+    hasDescription: true,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.FACE_CONSTRUCTOR,
+    maxTags: 0,
+    disabled: true,
+    tags: [],
+    subTypes: {
+      face_constructor: { name: 'Лицо', tags: characterPresets.face_constructor }
+    }
+  },
+  
+  // === ГЕНЕРАЦИЯ (заглушки) ===
+  [nodeTypes.PHOTO]: {
+    name: 'Фото',
+    type: nodeTypes.PHOTO,
+    category: 'generation',
+    icon: 'pi pi-image',
+    color: '#6ee7b7',
+    hasDescription: false,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.PHOTO,
+    maxTags: 0,
+    disabled: true,
+    tags: [],
+    subTypes: {
+      photo: { name: 'Фото', tags: generationPresets.photo }
+    }
+  },
+  
+  [nodeTypes.VIDEO]: {
+    name: 'Видео',
+    type: nodeTypes.VIDEO,
+    category: 'generation',
+    icon: 'pi pi-video',
+    color: '#6ee7b7',
+    hasDescription: false,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.VIDEO,
+    maxTags: 0,
+    disabled: true,
+    tags: [],
+    subTypes: {
+      video: { name: 'Видео', tags: generationPresets.video }
+    }
+  },
+  
+  // === СИСТЕМНЫЕ ===
   [nodeTypes.COMPOSER]: {
     name: 'Композитор',
     type: nodeTypes.COMPOSER,
     icon: 'pi pi-objects-column',
-    color: '#93c5fd', // голубой
+    color: '#93c5fd',
     hasDescription: false,
     hasInput: true,
     inputType: 'any',
-    acceptAnyInput: true, // Принимает любые типы нод
-    acceptsFrom: [nodeTypes.LIGHTING, nodeTypes.CAMERA, nodeTypes.STYLE, nodeTypes.ENVIRONMENT, nodeTypes.MOOD],
+    acceptAnyInput: true,
+    acceptsFrom: [
+      nodeTypes.LIGHTING, 
+      nodeTypes.ENVIRONMENT, 
+      nodeTypes.CAMERA, 
+      nodeTypes.LENS,
+      nodeTypes.STYLE, 
+      nodeTypes.MOOD,
+      nodeTypes.CHARACTER_TEMPLATE,
+      nodeTypes.FACE_CONSTRUCTOR,
+      nodeTypes.PHOTO,
+      nodeTypes.VIDEO
+    ],
     hasOutput: true,
     outputType: nodeTypes.COMPOSER,
     maxTags: 0,
@@ -131,18 +364,23 @@ export const nodeConfigs = {
     name: 'Результат',
     type: nodeTypes.RESULT,
     icon: 'pi pi-image',
-    color: '#fca5a5', // красный
+    color: '#fca5a5',
     hasDescription: false,
     hasInput: true,
-    acceptsFrom: [nodeTypes.COMPOSER], // Принимает только композитор
+    acceptsFrom: [nodeTypes.COMPOSER],
     hasOutput: false,
     maxTags: 0,
     isResult: true
   }
 }
 
-// Получить конфиг по типу
+// === ХЕЛПЕРЫ ===
 export const getNodeConfig = (type) => nodeConfigs[type] || null
 
-// Получить все конфиги для панели (все кроме результата)
 export const getAllNodeConfigs = () => Object.values(nodeConfigs)
+
+export const getCategoryConfigs = () => Object.values(nodeCategories)
+
+export const getNodesByCategory = (categoryId) => {
+  return Object.values(nodeConfigs).filter(config => config.category === categoryId)
+}

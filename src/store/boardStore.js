@@ -277,7 +277,10 @@ export const useBoardStore = defineStore('board', () => {
 
   const loadDefault = () => {
     const cx = CANVAS_WIDTH / 2, cy = CANVAS_HEIGHT / 2
-    createNode(nodeTypes.LIGHTING, cx + randomRange(-50, 50), cy + randomRange(-50, 50), {}, false)
+    // Создаём демо-ноды разных типов
+    createNode(nodeTypes.LIGHTING, cx - 200, cy - 100, {}, false)
+    createNode(nodeTypes.CAMERA, cx - 200, cy + 50, {}, false)
+    createNode(nodeTypes.ENVIRONMENT, cx - 200, cy + 200, {}, false)
     historyStore.init({ nodes: JSON.parse(JSON.stringify(nodes.value)), connections: [], nextNodeId: nextNodeId.value, nextZIndex: nextZIndex.value })
     saveToSession()
   }
