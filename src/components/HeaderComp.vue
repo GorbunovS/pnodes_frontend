@@ -42,7 +42,7 @@
        <div @click="setPage('profile')" v-if="userStore.user">
         <img 
           :src="userStore.user.default_avatar_id 
-            ? `https://avatars.yandex.net/get-yapic/${userStore.user.default_avatar_id}/islands-200` 
+            ? 'https://avatars.yandex.net/get-yapic/' + userStore.user.default_avatar_id + '/islands-200' 
             : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'" 
           class="h-10 w-10 rounded-full object-cover cursor-pointer" 
         />

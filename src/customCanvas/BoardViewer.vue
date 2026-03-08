@@ -1,7 +1,7 @@
 <template>
   <div
     ref="boardContainer"
-    class="board-container w-full h-screen bg-zinc-950 overflow-hidden relative touch-none select-none font-[Inter]"
+    class="board-container w-full h-full bg-zinc-950 overflow-hidden relative touch-none select-none font-[Inter]"
     style="font-family: 'Inter', system-ui, sans-serif;"
     @wheel.prevent="onWheel"
     @mousedown.middle.prevent="startPan"

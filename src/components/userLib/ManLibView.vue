@@ -1,74 +1,81 @@
 <template>
-    <div v-if="userStore.user" class="min-h-[95vh] overflow-y-hidden text-white flex flex-col items-center justify-center gap-50">
-        <div class="main-block w-full min-h-[95vh] border-l border-r border-slate-700">
-            <div class="tabs">
-                <Tabs v-model:value="activeTabValue" scrollable>
-                    <!-- ЗАГОЛОВКИ -->
-                    <TabList>
-                        <Tab value="tab-home">Мои <i class="pi pi-user" /></Tab>
-                        <Tab value="tab-public">Опубликованные <i class="pi pi-globe" /></Tab>
-                        
-                        <!-- Кнопка Создать - не вкладка, а кнопка -->
-                        <div 
-                            class="flex items-center gap-2 px-4 py-2 cursor-pointer text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors rounded-lg mx-1"
-                            @click="createNewSession"
-                        >
-                            <span>Создать</span>
-                            <i class="pi pi-plus" />
+    <div v-if="userStore.user" class="h-full flex flex-col text-white">
+        <div class="flex-1 flex flex-col border-l border-r border-slate-700 overflow-hidden">
+            <Tabs v-model:value="activeTabValue" scrollable class="flex flex-col h-full">
+                <!-- ЗАГОЛОВКИ -->
+                <TabList class="flex-shrink-0">
+                    <Tab value="tab-home">Мои <i class="pi pi-user" /></Tab>
+                    <Tab value="tab-public">Опубликованные <i class="pi pi-globe" /></Tab>
+                    
+                    <!-- Кнопка Создать - не вкладка, а кнопка -->
+                    <div 
+                        class="flex items-center gap-2 px-4 py-2 cursor-pointer text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors rounded-lg mx-1"
+                        @click="createNewSession"
+                    >
+                        <span>Создать</span>
+                        <i class="pi pi-plus" />
+                    </div>
+
+                    <!-- Динамические заголовки открытых вкладок -->
+                    <Tab v-for="session in openTabsSessions" :key="session.id" :value="session.id">
+                        <div class="flex align-items-center gap-2">
+                            <i class="pi pi-file" />
+                            <span>{{ session.name }}</span>
+                            <i class="pi pi-times hover:bg-gray-200 p-1 border-round cursor-pointer"
+                                style="font-size: 0.8rem" @click.stop="closeSession(session.id)" />
                         </div>
+                    </Tab>
+                </TabList>
 
-                        <!-- Динамические заголовки открытых вкладок -->
-                        <Tab v-for="session in openTabsSessions" :key="session.id" :value="session.id">
-                            <div class="flex align-items-center gap-2">
-                                <i class="pi pi-file" />
-                                <span>{{ session.name }}</span>
-                                <i class="pi pi-times hover:bg-gray-200 p-1 border-round cursor-pointer"
-                                    style="font-size: 0.8rem" @click.stop="closeSession(session.id)" />
+                <!-- КОНТЕНТ -->
+                <TabPanels class="flex-1 overflow-hidden">
+                    <!-- Вкладка "Мои" - список сохранённых проектов -->
+                    <TabPanel value="tab-home" class="h-full overflow-auto">
+                        <div class="flex flex-wrap gap-4 p-4">
+                            <ProjCard 
+                                v-for="session in savedSessions" 
+                                :key="session.id" 
+                                :id="session.id"
+                                :name="session.name"
+                                :createdAt="session.createdAt"
+                                @click="openSession(session.id)"
+                            />
+                            <!-- Пустое состояние -->
+                            <div v-if="savedSessions.length === 0" class="flex flex-col items-center justify-center w-full h-64 text-zinc-500">
+                                <i class="pi pi-folder-open text-4xl mb-4 opacity-50"></i>
+                                <p class="text-lg">Нет сохранённых проектов</p>
+                                <p class="text-sm text-zinc-600">Нажмите "Создать" или сохраните текущую сессию</p>
                             </div>
-                        </Tab>
-                    </TabList>
+                        </div>
+                    </TabPanel>
 
-                    <!-- КОНТЕНТ -->
-                    <TabPanels>
-                        <!-- Вкладка "Мои" - список сохранённых проектов -->
-                        <TabPanel value="tab-home">
-                            <div class="flex flex-wrap gap-4 p-4">
-                                <ProjCard 
-                                    v-for="session in savedSessions" 
-                                    :key="session.id" 
-                                    :id="session.id"
-                                    :name="session.name"
-                                    :createdAt="session.createdAt"
-                                    @click="openSession(session.id)"
-                                />
-                                <!-- Пустое состояние -->
-                                <div v-if="savedSessions.length === 0" class="flex flex-col items-center justify-center w-full h-64 text-zinc-500">
-                                    <i class="pi pi-folder-open text-4xl mb-4 opacity-50"></i>
-                                    <p class="text-lg">Нет сохранённых проектов</p>
-                                    <p class="text-sm text-zinc-600">Нажмите "Создать" или сохраните текущую сессию</p>
-                                </div>
-                            </div>
-                        </TabPanel>
+                    <TabPanel value="tab-public" class="h-full overflow-auto">
+                        <div class="flex flex-col items-center justify-center h-96 text-zinc-500">
+                            <i class="pi pi-inbox text-4xl mb-4 opacity-50"></i>
+                            <p class="text-lg">Вы пока не опубликовали ничего</p>
+                        </div>
+                    </TabPanel>
 
-                        <TabPanel value="tab-public">
-                            <div class="flex flex-col items-center justify-center h-96 text-zinc-500">
-                                <i class="pi pi-inbox text-4xl mb-4 opacity-50"></i>
-                                <p class="text-lg">Вы пока не опубликовали ничего</p>
-                            </div>
-                        </TabPanel>
-
-                        <!-- Динамические панели для каждой открытой вкладки -->
-                        <TabPanel v-for="session in openTabsSessions" :key="session.id" :value="session.id">
-                            <!-- Рендерим только активный таб, иначе данные из разных сессий смешаются -->
-                            <BoardViewer v-if="activeTabValue === session.id" :session-id="session.id" />
-                            <div v-else class="flex flex-col items-center justify-center h-96 text-zinc-600">
-                                <i class="pi pi-folder text-4xl mb-4 opacity-30"></i>
-                                <p>Проект свёрнут</p>
-                            </div>
-                        </TabPanel>
-                    </TabPanels>
-                </Tabs>
-            </div>
+                    <!-- Динамические панели для каждой открытой вкладки -->
+                    <TabPanel 
+                        v-for="session in openTabsSessions" 
+                        :key="session.id" 
+                        :value="session.id"
+                        class="h-full overflow-hidden"
+                    >
+                        <!-- Рендерим только активный таб, иначе данные из разных сессий смешаются -->
+                        <BoardViewer 
+                            v-if="activeTabValue === session.id" 
+                            :session-id="session.id" 
+                            class="h-full"
+                        />
+                        <div v-else class="flex flex-col items-center justify-center h-full text-zinc-600">
+                            <i class="pi pi-folder text-4xl mb-4 opacity-30"></i>
+                            <p>Проект свёрнут</p>
+                        </div>
+                    </TabPanel>
+                </TabPanels>
+            </Tabs>
         </div>
     </div>
     <AuthPage v-else />
@@ -147,3 +154,14 @@ watch(() => activeTabValue.value, (newValue) => {
     }
 });
 </script>
+
+<style scoped>
+/* Убираем стандартные padding от PrimeVue Tabs */
+:deep(.p-tabpanels) {
+    padding: 0;
+}
+
+:deep(.p-tabpanel) {
+    height: 100%;
+}
+</style>
