@@ -128,3 +128,41 @@ h1 {
     background-color: #f9f9f9;
   }
 }
+
+/* === ПРИНУДИТЕЛЬНЫЕ ТЁМНЫЕ СТИЛИ ДЛЯ PRIMEVUE ИНПУТОВ === */
+/* Эти стили перебивают любые светлые темы */
+
+.p-textarea,
+.p-inputtext,
+.p-select {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  color: #d4d4d8 !important;
+  border-color: rgba(63, 63, 70, 0.5) !important;
+}
+
+.p-textarea::placeholder,
+.p-inputtext::placeholder {
+  color: #52525b !important;
+}
+
+.p-textarea:focus,
+.p-inputtext:focus,
+.p-select:focus-within {
+  border-color: #71717a !important;
+  box-shadow: 0 0 0 1px rgba(113, 113, 122, 0.5) !important;
+}
+
+/* Стили для выпадающих списков */
+.p-select-dropdown {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  border-color: rgba(63, 63, 70, 0.5) !important;
+}
+
+.p-select-option {
+  background-color: transparent !important;
+  color: #d4d4d8 !important;
+}
+
+.p-select-option:hover {
+  background-color: rgba(63, 63, 70, 0.5) !important;
+}

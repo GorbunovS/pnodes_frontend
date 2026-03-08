@@ -5,13 +5,13 @@
     >
         <!-- Верхняя строка с аватаркой и кнопками -->
         <div class="flex items-start justify-between mb-2">
-            <!-- Жёлтый круг (аватарка с эмодзи) -->
+            <!-- Круг с эмодзи (прозрачный фон) -->
             <div 
-                class="w-10 h-10 rounded-full bg-amber-400 flex items-center justify-center shrink-0 text-xl cursor-pointer hover:scale-110 transition-transform"
+                class="w-10 h-10 rounded-full border-2 border-zinc-600 flex items-center justify-center shrink-0 text-2xl cursor-pointer hover:scale-110 transition-transform hover:border-zinc-400 bg-zinc-800/30"
                 @click.stop="openEmojiPicker"
                 title="Сменить эмодзи"
             >
-                {{ emoji }}
+                {{ currentEmoji }}
             </div>
             
             <!-- Кнопки действий -->
@@ -111,7 +111,7 @@
                 v-for="e in commonEmojis" 
                 :key="e"
                 class="w-10 h-10 text-2xl rounded-lg hover:bg-zinc-700 transition-colors flex items-center justify-center"
-                :class="{ 'bg-zinc-700 ring-2 ring-blue-400': e === emoji }"
+                :class="{ 'bg-zinc-700 ring-2 ring-blue-400': e === currentEmoji }"
                 @click="selectEmoji(e)"
             >
                 {{ e }}
@@ -121,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useSessionStore } from '../../store/sessionStore';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
@@ -143,11 +143,14 @@ const sessionStore = useSessionStore();
 
 // Эмодзи (хранится в localStorage по ID сессии)
 const EMOJI_KEY_PREFIX = 'proj_emoji_';
-const commonEmojis = ['🎨', '🖼️', '📸', '✨', '🎭', '🎬', '🎮', '📱', '💻', '🎪', '🎨', '🎯', '🎲', '🎸', '🎺', '🎻', '🎹', '🎤', '🎧', '🎮', '🎲', '🎳', '🎯', '🎰', '🎱'];
+const commonEmojis = ['🎨', '🖼️', '📸', '✨', '🎭', '🎬', '🎮', '📱', '💻', '🎪', '🎯', '🎲', '🎸', '🎺', '🎻', '🎹', '🎤', '🎧', '🎳', '🎰', '🎱', '🔥', '⭐️', '🌟', '💡'];
 
-const emoji = computed(() => {
-    const saved = localStorage.getItem(EMOJI_KEY_PREFIX + props.id);
-    return saved || '🎨';
+// Реактивное эмодзи
+const currentEmoji = ref(localStorage.getItem(EMOJI_KEY_PREFIX + props.id) || '🎨');
+
+// Следим за изменениями ID сессии
+watch(() => props.id, (newId) => {
+    currentEmoji.value = localStorage.getItem(EMOJI_KEY_PREFIX + newId) || '🎨';
 });
 
 const formattedDate = computed(() => {
@@ -184,8 +187,9 @@ const openEmojiPicker = () => {
     showEmojiDialog.value = true;
 };
 
-const selectEmoji = (e) => {
-    localStorage.setItem(EMOJI_KEY_PREFIX + props.id, e);
+const selectEmoji = (selectedEmoji) => {
+    localStorage.setItem(EMOJI_KEY_PREFIX + props.id, selectedEmoji);
+    currentEmoji.value = selectedEmoji; // Обновляем реактивно
     showEmojiDialog.value = false;
 };
 
