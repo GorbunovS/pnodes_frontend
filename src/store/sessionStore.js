@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useBoardStore } from './boardStore'
 import { getNodeConfig } from '../data/nodeConfig.js'
 
 const SESSIONS_LIST_KEY = 'pnodes_sessions_list'
@@ -414,97 +413,6 @@ export const useSessionStore = defineStore('session', () => {
         session.modifiedAt = Date.now()
         saveSessionsList()
       }
-    },
-
-    // === QUICK SAVE SESSION (from NodePanel) ===
-    // Сохраняет текущее состояние boardStore как новую сессию или обновляет существующую
-    saveCurrentSessionAs: (customName = null) => {
-      const boardStore = useBoardStore()
-      const name = customName || generateSessionName(savedSessions.value.length)
-      
-      // Ищем существующую сессию с таким именем
-      const existingSession = savedSessions.value.find(s => s.name === name)
-      
-      let sessionId
-      let isUpdate = false
-      
-      if (existingSession) {
-        // Обновляем существующую
-        sessionId = existingSession.id
-        isUpdate = true
-        
-        // Обновляем метаданные
-        existingSession.modifiedAt = Date.now()
-        existingSession.nodeCount = boardStore.nodes.length
-        existingSession.connectionCount = boardStore.connections.length
-        existingSession.isSaved = true
-      } else {
-        // Создаём новую сессию
-        sessionId = generateSessionId()
-        const newSession = {
-          id: sessionId,
-          name: name,
-          createdAt: Date.now(),
-          modifiedAt: Date.now(),
-          isSaved: true,
-          nodeCount: boardStore.nodes.length,
-          connectionCount: boardStore.connections.length,
-          lastGeneration: null
-        }
-        savedSessions.value.push(newSession)
-      }
-      
-      // Сохраняем данные canvas
-      const sessionData = {
-        nodes: boardStore.nodes.map(n => ({
-          id: n.id,
-          type: n.type,
-          x: n.x,
-          y: n.y,
-          zIndex: n.zIndex,
-          data: JSON.parse(JSON.stringify(n.data))
-        })),
-        connections: boardStore.connections.map(c => ({
-          id: c.id,
-          fromNodeId: c.fromNodeId,
-          fromOutIdx: c.fromOutIdx,
-          toNodeId: c.toNodeId,
-          toInIdx: c.toInIdx
-        })),
-        nextNodeId: boardStore.nextNodeId,
-        nextZIndex: boardStore.nextZIndex,
-        viewport: { panX: 0, panY: 0, zoom: 0.8 }
-      }
-      
-      localStorage.setItem(`${SESSION_DATA_PREFIX}${sessionId}`, JSON.stringify(sessionData))
-      saveSessionsList()
-      
-      // Формируем полный объект для логирования
-      const fullSessionData = {
-        id: sessionId,
-        name: name,
-        savedAt: Date.now(),
-        isUpdate: isUpdate,
-        canvas: sessionData,
-        meta: {
-          nodeCount: boardStore.nodes.length,
-          connectionCount: boardStore.connections.length,
-          selectedCount: boardStore.selectedCount
-        }
-      }
-      
-      // Логируем в консоль
-      const actionColor = isUpdate ? '#f59e0b' : '#22c55e'
-      const actionText = isUpdate ? 'ОБНОВЛЕНА' : 'СОХРАНЕНА'
-      console.log(`%c[SessionStore] Сессия ${actionText}!`, `color: ${actionColor}; font-weight: bold; font-size: 14px;`)
-      console.log('%cID: ' + sessionId, 'color: #6b7280;')
-      console.log('%cНазвание: ' + name, 'color: #6b7280;')
-      console.log('%c────────────────────────────────────────', 'color: #374151;')
-      console.log('%cJSON сессии:', 'color: #93c5fd; font-weight: bold;')
-      console.log(JSON.stringify(fullSessionData, null, 2))
-      console.log('%c────────────────────────────────────────', 'color: #374151;')
-      
-      return fullSessionData
     }
   }
 })
