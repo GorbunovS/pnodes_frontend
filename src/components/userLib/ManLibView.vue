@@ -59,7 +59,12 @@
 
                         <!-- Динамические панели для каждой открытой вкладки -->
                         <TabPanel v-for="session in openTabsSessions" :key="session.id" :value="session.id">
-                            <BoardViewer :session-id="session.id" />
+                            <!-- Рендерим только активный таб, иначе данные из разных сессий смешаются -->
+                            <BoardViewer v-if="activeTabValue === session.id" :session-id="session.id" />
+                            <div v-else class="flex flex-col items-center justify-center h-96 text-zinc-600">
+                                <i class="pi pi-folder text-4xl mb-4 opacity-30"></i>
+                                <p>Проект свёрнут</p>
+                            </div>
                         </TabPanel>
                     </TabPanels>
                 </Tabs>
