@@ -2,200 +2,274 @@
 
 ## Project Overview
 
-PNodes is a Vue 3-based visual node editor for AI image prompt engineering. It provides a node-based interface for constructing complex prompts for AI image generation APIs (specifically GenAPI.ru with GPT-Image-1 model). The application allows users to visually compose scenes, characters, lighting, and styling through an intuitive graph editor built with BaklavaJS.
+PNodes — это визуальный нодовый редактор промптов для генерации изображений с помощью AI. Приложение позволяет конструировать сложные промпты через интуитивный графический интерфейс, соединяя ноды различных типов (персонажи, освещение, окружение, стиль) в единую композицию.
 
-**Key Features:**
-- Visual node-based prompt constructor
-- Character builder with detailed facial feature controls (skin, nose, mouth, eyes, hair)
-- Scene composition with environment, lighting, and camera settings
-- Integration with GenAPI.ru for AI image generation
-- Yandex OAuth authentication
-- Project templates and preset system
+**Основные возможности:**
+- Визуальный конструктор промптов на основе нод
+- Детальный билдер персонажей с настройкой черт лица (кожа, нос, губы, глаза, волосы)
+- Композитор сцен с окружением, освещением и камерой
+- Интеграция с GenAPI.ru для генерации изображений (модель GPT-Image-1)
+- Аутентификация через Yandex OAuth
+- Система шаблонов и пресетов
+- Мультисессионная работа с проектами (вкладки)
+- История изменений (undo/redo)
 
 ## Technology Stack
 
-- **Framework:** Vue 3 (Composition API with `<script setup>`)
+- **Framework:** Vue 3.5+ (Composition API с `<script setup>`)
 - **Build Tool:** Vite 7
-- **State Management:** Pinia
-- **Routing:** Vue Router 4 (memory history mode)
-- **UI Components:** PrimeVue 4 with custom Aura-based theme
+- **State Management:** Pinia 3
+- **Router:** Vue Router 4 (memory history mode)
+- **UI Components:** PrimeVue 4 с кастомной темой на базе Aura
 - **Styling:** Tailwind CSS 4
-- **Node Editor:** BaklavaJS 2
-- **Icons:** PrimeIcons
+- **Анимации:** @vueuse/motion
 - **Drag & Drop:** @dnd-kit/vue
 - **Gestures:** @vueuse/gesture
 - **Pan/Zoom:** vue-panzoom
+- **Icons:** PrimeIcons
 
 ## Project Structure
 
 ```
 src/
-├── main.js                 # Application entry point, plugin initialization
-├── App.vue                 # Root component with layout
-├── style.css               # Global styles, Tailwind imports, custom fonts
+├── main.js                    # Точка входа, инициализация плагинов
+├── App.vue                    # Корневой компонент с layout
+├── style.css                  # Глобальные стили, Tailwind, кастомные шрифты
 ├── router/
-│   └── index.js            # Vue Router configuration
-├── store/
-│   ├── user.js             # User authentication (Yandex OAuth)
-│   ├── aistore.js          # AI API integration (GenAPI.ru)
-│   └── pro.js              # Project management state
+│   └── index.js               # Конфигурация Vue Router
+├── store/                     # Pinia stores
+│   ├── user.js                # Аутентификация (Yandex OAuth)
+│   ├── aistore.js             # Интеграция с GenAPI.ru
+│   ├── boardStore.js          # Состояние canvas (ноды, связи, выделение)
+│   ├── historyStore.js        # История изменений (undo/redo)
+│   ├── generationStore.js     # Состояние генерации изображений
+│   ├── sessionStore.js        # Управление сессиями проектов
+│   └── pro.js                 # Управление проектами
 ├── components/
-│   ├── HeaderComp.vue      # Navigation header
-│   ├── HomePage.vue        # Landing page
-│   ├── AuthPage.vue        # Authentication page
-│   ├── ErorrPage.vue       # 404 error page
-│   ├── NodesView.vue       # Main node editor view
-│   ├── ProfileView.vue     # User profile page
-│   ├── nodes/
-│   │   ├── nodes.js        # Node type definitions (BaklavaJS)
-│   │   ├── types.js        # Interface type definitions
-│   │   ├── presets/        # Preset configurations for nodes
-│   │   │   ├── cameraPreset.js
-│   │   │   ├── envPresets.js
-│   │   │   ├── eyePresets.js
-│   │   │   ├── hairPresets.js
-│   │   │   ├── lightingPresets.js
-│   │   │   ├── mouthPreset.js
-│   │   │   ├── nosePreset.js
-│   │   │   ├── skinPresets.js
-│   │   │   └── stylesPresets.js
-│   │   └── custom_nodes/   # Custom Vue components for nodes
-│   │       ├── CustomActionBtn.vue
-│   │       └── ImageInput.vue
-│   ├── userLib/
-│   │   ├── ManLibView.vue  # Template library view
-│   │   ├── ProjCard.vue    # Project card component
-│   │   └── TemplateCardMini.vue
-│   └── helpers/
-│       └── lockScroll.js   # Scroll locking utility
-├── customCanvas/           # Custom canvas components
-│   ├── BoardCanvas.vue
-│   ├── BoardViewer.vue
-│   └── DraggableNote.vue
-├── data/
-│   └── ProjMocks.js        # Project template mock data
-├── engine/
-│   └── canvas.js           # Canvas engine utilities
-└── utils/
-    ├── exportPerson.js     # Character export utility
-    ├── exportScene.js      # Scene export utility
-    ├── exportUniversal.js  # Universal graph export
-    └── helpers.js          # General helper functions
+│   ├── HeaderComp.vue         # Навигационный хедер
+│   ├── HomePage.vue           # Лендинг
+│   ├── AuthPage.vue           # Страница авторизации
+│   ├── ErorrPage.vue          # 404
+│   ├── ProfileView.vue        # Профиль пользователя
+│   ├── CustomToggleSwitch.vue # Кастомный переключатель
+│   ├── MotionButton.vue       # Кнопка с анимацией
+│   ├── user/
+│   │   └── ApiKeysManager.vue # Управление API ключами
+│   └── userLib/
+│       ├── ManLibView.vue     # Основной view с вкладками проектов
+│       ├── TemplateCardMini.vue # Карточка шаблона
+│       └── ProjCard.vue       # Карточка проекта
+├── customCanvas/              # Кастомная реализация node editor
+│   ├── BoardViewer.vue        # Контейнер с pan/zoom и панелями
+│   ├── BoardCanvas.vue        # Canvas с нодами и связями
+│   ├── NodesTemplate.vue      # Компоненты нод (5 типов)
+│   ├── NodePanel.vue          # Панель добавления нод
+│   ├── ActionPanel.vue        # Панель действий (undo/redo/центрирование)
+│   ├── Minimap.vue            # Миникарта canvas
+│   └── DraggableNote.vue      # Заметки на canvas
+├── data/                      # Конфигурация и данные
+│   ├── nodeConfig.js          # Конфигурация типов нод и правил соединений
+│   ├── nodePresets.js         # Пресеты для сцен (свет, камера, окружение)
+│   ├── characterPresets.js    # Пресеты для персонажей
+│   ├── providersConfig.js     # Конфигурация AI провайдеров
+│   └── ProjMocks.js           # Шаблоны проектов (3 демо)
+├── utils/
+│   └── helpers.js             # Вспомогательные функции
+└── assets/                    # Статика (шрифты, изображения, SVG)
+    ├── fonts/                 # SoyuzGroteskBold, Racama-U
+    └── *.svg/png
 ```
 
 ## Build and Development Commands
 
 ```bash
-# Install dependencies
+# Установка зависимостей
 npm install
 
-# Start development server (Vite dev server)
+# Запуск dev сервера (Vite)
 npm run dev
 
-# Build for production
+# Сборка для production
 npm run build
 
-# Preview production build locally
+# Превью production сборки
 npm run preview
 ```
 
-## Configuration Files
+**Dev сервер:** http://localhost:5173/
+
+## Configuration
 
 ### Environment Variables
 
-- `.env` - Production environment variables
-  - `VITE_REDIRECT_URI` - Yandex OAuth redirect URI for production
-  - `VITE_YANDEX_CLIENT_ID` - Yandex OAuth client ID
+**Файл `.env` (production):**
+```
+VITE_REDIRECT_URI=https://gorbunovs.github.io/pnodes_frontend/
+VITE_YANDEX_CLIENT_ID=f95826a56ebf4246b5ce7349ad22b7dc
+```
 
-- `.env.development` - Development environment variables
-  - `VITE_REDIRECT_URI` - Local development redirect URI (http://localhost:5173/)
+**Файл `.env.development` (local):**
+```
+VITE_REDIRECT_URI=http://localhost:5173/
+VITE_YANDEX_CLIENT_ID=f95826a56ebf4246b5ce7349ad22b7dc
+```
 
 ### Vite Configuration (vite.config.js)
 
-- Base path: `/pnodes_frontend` (for GitHub Pages deployment)
+- Base path: `/pnodes_frontend` (для GitHub Pages)
 - Plugins: Vue plugin, Tailwind CSS plugin
 
 ## Code Style Guidelines
 
 ### Vue Components
-- Use `<script setup>` syntax exclusively
-- Composition API preferred over Options API
-- Component names use PascalCase
-- File names match component names
+
+- Использовать **только** `<script setup>` синтаксис
+- Composition API вместо Options API
+- Имена компонентов в PascalCase
+- Имена файлов соответствуют именам компонентов
 
 ### Styling
-- Tailwind CSS for utility-first styling
-- Custom CSS in `style.css` for global styles and BaklavaJS overrides
-- Russian comments in CSS for project-specific overrides
-- Dark theme is default and enforced
+
+- Tailwind CSS для utility-first стилизации
+- Кастомные CSS переменные в `style.css` для глобальных настроек
+- Тёмная тема по умолчанию (принудительно включена в `App.vue`)
+- Русские комментарии в CSS для project-specific override'ов
+- Кастомный шрифт SoyuzGroteskBold для заголовков, Inter для UI
 
 ### JavaScript Conventions
-- ES6+ syntax (ES modules)
-- Semicolons optional but consistent within files
-- Russian language used for UI text and comments
-- Async/await for asynchronous operations
 
-### Node Editor Architecture
+- ES6+ синтаксис (ES модули)
+- Точки с запятыми опциональны, но консистентны в рамках файла
+- Русский язык для UI текста и комментариев
+- Async/await для асинхронных операций
 
-The application uses BaklavaJS for the visual node editor:
+## Node Editor Architecture
 
-1. **Node Types** (defined in `src/components/nodes/nodes.js`):
-   - `CompositionNode` - Scene composition root
-   - `CharacterNode` / `CharacterFullNode` - Character definitions
-   - `EnvironmentNode` - Scene environment settings
-   - `LightingNode` - Lighting configuration
-   - `CameraNode` - Camera settings
-   - `StyleNode` - Stylistic presets
-   - `SkinNode`, `NoseNode`, `MouthNode`, `EyesNode`, `HairNode` - Facial features
-   - `ResultNode` - Output/generation node
+Кастомная реализация визуального редактора нод (вместо BaklavaJS в текущей версии):
 
-2. **Interface Types** (defined in `src/components/nodes/types.js`):
-   - Typed connections between nodes (character, environment, light, etc.)
-   - Color-coded ports for visual distinction
+### Типы нод (src/data/nodeConfig.js)
 
-3. **Presets** (in `src/components/nodes/presets/`):
-   - JSON-like preset definitions for various node parameters
-   - Organized by category (lighting, environment, facial features, etc.)
+**Ранги нод (иерархия):**
+```
+PART (1) → ASSEMBLY (2) → ELEMENT (3) → COMPOSER (4) → OUTPUT (5)
+```
+
+**Категории нод:**
+- **Свет** (`lighting`) — янтарный цвет, пресеты: artificial, studio, natural
+- **Окружение** (`environment`) — светло-зелёный, пресеты: studio, interior, exterior
+- **Камеры** (`camera`, `lens`) — розовый, пресеты: camera types, lens types
+- **Стиль** (`style`) — фиолетовый, пресеты: digital, traditional, cinematic
+- **Настроение** (`mood`) — розово-красный, пресеты: emotions
+- **Персонаж** (`character`, `skin`, `nose`, `eyes`, `mouth`, `hair`) — голубой/оранжевый
+- **Композитор** (`composer`) — голубой, собирает входы от всех элементов
+- **Результат** (`result`, `generation`) — мятный/красный, вывод промпта/генерация
+
+### Правила соединений
+
+- Соединения работают по принципу Output → Input
+- Нода может принимать входы только от нод с меньшим рангом
+- Композитор принимает множественные входы (lighting, environment, camera, character)
+- Character принимает части лица (skin, nose, eyes, mouth, hair)
+- Result и Generation принимают только от Composer
+
+### Keyboard Shortcuts
+
+| Клавиша | Действие |
+|---------|----------|
+| `Ctrl+Z` | Undo |
+| `Ctrl+Y` / `Ctrl+Shift+Z` | Redo |
+| `Ctrl+C` | Копировать выбранные ноды |
+| `Ctrl+V` | Вставить ноды |
+| `Delete` | Удалить выбранные ноды (не Backspace!) |
+| `Escape` | Сбросить выделение / отменить соединение |
+| `Ctrl+Click` на связи | Удалить связь |
 
 ## Authentication Flow
 
-1. User clicks "Войти" (Login) button
-2. Redirect to Yandex OAuth with client ID
-3. Yandex redirects back with access token in URL hash
-4. `handleYandexAuth()` in `user.js` extracts and stores token
-5. User info fetched from Yandex API and stored in Pinia
-6. Token persisted in localStorage as `yandex_token`
+1. Пользователь нажимает "Войти" в хедере
+2. Редирект на Yandex OAuth с `client_id`
+3. Yandex редиректит обратно с `access_token` в URL hash
+4. `handleYandexAuth()` в `user.js` извлекает и сохраняет токен
+5. Данные пользователя загружаются с `login.yandex.ru/info`
+6. Токен сохраняется в `localStorage` как `yandex_token`
 
 ## AI Image Generation Flow
 
-1. User constructs prompt using nodes
-2. `exportUniversal.js` traverses the graph and builds structured prompt
-3. User clicks generate in ResultNode
-4. API token checked (prompted if missing)
-5. `aistore.js` creates task via GenAPI.ru API
-6. Polling mechanism checks task status every 3 seconds
-7. Result displayed when generation completes
+1. Пользователь строит промпт через ноды
+2. Данные собираются из подключённых нод в композитор
+3. В ноде Generation выбирается провайдер и настройки
+4. При нажатии "Генерировать":
+   - Проверяется наличие API токена (хранится в `localStorage` как `ai_api_token`)
+   - Создаётся задача через API GenAPI.ru
+   - Запускается polling статуса каждые 3 секунды
+   - Результат отображается при завершении
+
+**API Endpoints:**
+- Создание задачи: `POST https://api.gen-api.ru/api/v1/networks/gpt-image-1`
+- Проверка статуса: `GET https://api.gen-api.ru/api/v1/request/get/{request_id}`
+
+## Session Management
+
+- Каждый проект — отдельная сессия с уникальным ID
+- Состояние canvas сохраняется в `localStorage` с префиксом `canvasState_{sessionId}`
+- Список сессий хранится в `canvasSessions`
+- Вкладки проектов в `ManLibView.vue`
+- Шаблоны (1, 2, 3) загружаются из `ProjMocks.js`
 
 ## Deployment
 
-The project is configured for GitHub Pages deployment via GitHub Actions:
+**GitHub Pages** через GitHub Actions:
 
 - Workflow: `.github/workflows/deploy.yml`
-- Trigger: Push to `main` branch
-- Build output: `dist/` directory
-- Deployment target: GitHub Pages
+- Триггер: push в `main` ветку
+- Node версия: 20
+- Сборка: `npm run build`
+- Выходная директория: `dist/`
 
 ## Security Considerations
 
-- API tokens stored in localStorage (client-side only)
-- Yandex OAuth client ID exposed in frontend (standard for SPA)
-- No backend proxy for API calls - direct browser-to-API communication
-- No sensitive server-side configuration in repository
+- API токены хранятся в `localStorage` (только клиентская сторона)
+- Yandex OAuth `client_id` доступен в фронтенде (стандартно для SPA)
+- Прямое общение браузера с API (без бэкенд-прокси)
+- Нет чувствительной серверной конфигурации в репозитории
+
+## State Management Details
+
+### boardStore
+- Управление нодами и связями
+- Выделение и мульти-выделение
+- Drag & drop нод
+- Clipboard (копирование/вставка)
+- Hint system (подсветка совместимых нод)
+
+### historyStore
+- Undo/redo стек (максимум 50 состояний)
+- Сохранение состояния при значимых изменениях
+
+### generationStore
+- Состояние генерации (idle, pending, generating, success, error)
+- Результат генерации
+- Параметры генерации
+
+## Assets
+
+**Шрифты:**
+- `SoyuzGroteskBold` — основной шрифт приложения
+- `Inter` — UI шрифт
+- `Racama-U` — дополнительный декоративный
+
+**Изображения:**
+- `fog_bg.png` / `fog_boll.png` — фоновые эффекты
+- `logo_1x1.svg` / `P_nodes.svg` — логотипы
+- `galery/` — демо изображения для шаблонов
 
 ## Notes for AI Agents
 
-- The application is Russian-language focused (UI, comments, documentation)
-- BaklavaJS theme overrides are in `style.css` (transparent backgrounds, custom node sizing)
-- Memory history mode used in router (not hash mode) - important for OAuth redirects
-- Project templates are hardcoded in `ProjMocks.js` (not fetched from API)
-- Dark mode is enforced; light mode CSS exists but is not actively used
+- Приложение полностью на русском языке (UI, комментарии)
+- Тёмная тема принудительно включена, светлая есть но не используется
+- Важно: router использует `createMemoryHistory`, не hash mode
+- Для OAuth редиректов важен правильный `VITE_REDIRECT_URI`
+- Тестирование OAuth локально: использовать `localhost:5173/` в `.env.development`
+- Шаблоны проектов захардкожены в `ProjMocks.js`, не загружаются с API
+- Node editor — кастомная реализация, не BaklavaJS (хотя есть следы в style.css)
+- При добавлении новых типов нод — обновлять `nodeConfig.js`, `RANKS`, и `connectionRules`

@@ -17,8 +17,8 @@
                             <i class="pi pi-plus" />
                         </div>
 
-                        <!-- Динамические заголовки сессий -->
-                        <Tab v-for="session in sessions" :key="session.id" :value="session.id">
+                        <!-- Динамические заголовки открытых вкладок -->
+                        <Tab v-for="session in openTabsSessions" :key="session.id" :value="session.id">
                             <div class="flex align-items-center gap-2">
                                 <i class="pi pi-file" />
                                 <span>{{ session.name }}</span>
@@ -30,10 +30,23 @@
 
                     <!-- КОНТЕНТ -->
                     <TabPanels>
+                        <!-- Вкладка "Мои" - список сохранённых проектов -->
                         <TabPanel value="tab-home">
-                            <div class="flex flex-wrap gap-4">
-                                <TemplateCardMini v-for="item in templatesMocks" :key="item.id" v-bind="item"
-                                    @click="openTemplate(item.id)" />
+                            <div class="flex flex-wrap gap-4 p-4">
+                                <ProjCard 
+                                    v-for="session in savedSessions" 
+                                    :key="session.id" 
+                                    :id="session.id"
+                                    :name="session.name"
+                                    :createdAt="session.createdAt"
+                                    @click="openSession(session.id)"
+                                />
+                                <!-- Пустое состояние -->
+                                <div v-if="savedSessions.length === 0" class="flex flex-col items-center justify-center w-full h-64 text-zinc-500">
+                                    <i class="pi pi-folder-open text-4xl mb-4 opacity-50"></i>
+                                    <p class="text-lg">Нет сохранённых проектов</p>
+                                    <p class="text-sm text-zinc-600">Нажмите "Создать" или сохраните текущую сессию</p>
+                                </div>
                             </div>
                         </TabPanel>
 
@@ -44,8 +57,8 @@
                             </div>
                         </TabPanel>
 
-                        <!-- Динамические панели для каждой сессии -->
-                        <TabPanel v-for="session in sessions" :key="session.id" :value="session.id">
+                        <!-- Динамические панели для каждой открытой вкладки -->
+                        <TabPanel v-for="session in openTabsSessions" :key="session.id" :value="session.id">
                             <BoardViewer :session-id="session.id" />
                         </TabPanel>
                     </TabPanels>
@@ -57,10 +70,11 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
-
+import { ref, watch, computed } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useUserStore } from '../../store/user';
-import TemplateCardMini from './TemplateCardMini.vue';
+import { useSessionStore } from '../../store/sessionStore';
+import ProjCard from './ProjCard.vue';
 import AuthPage from '../AuthPage.vue';
 import Tabs from 'primevue/tabs';
 import TabList from 'primevue/tablist';
@@ -70,107 +84,61 @@ import TabPanel from 'primevue/tabpanel';
 import BoardViewer from '../../customCanvas/BoardViewer.vue';
 
 const userStore = useUserStore();
+const sessionStore = useSessionStore();
+const { savedSessions, openTabs, currentSessionId } = storeToRefs(sessionStore);
+
 const activeTabValue = ref('tab-home');
-const sessions = ref([]);
 
-// Загрузка сессий из localStorage при старте
-const loadSessions = () => {
-    const saved = localStorage.getItem('canvasSessions');
-    if (saved) {
-        try {
-            sessions.value = JSON.parse(saved);
-        } catch (e) {
-            console.log('Failed to load sessions');
-        }
-    }
-};
-
-// Сохранение сессий
-const saveSessions = () => {
-    localStorage.setItem('canvasSessions', JSON.stringify(sessions.value));
-};
+// Вычисляем сессии для открытых вкладок
+const openTabsSessions = computed(() => {
+    return openTabs.value.map(id => sessionStore.getSessionById(id)).filter(Boolean);
+});
 
 // Создать новую сессию
 const createNewSession = () => {
-    const sessionId = `session_${Date.now()}`;
-    const sessionNumber = sessions.value.length + 1;
-    
-    const newSession = {
-        id: sessionId,
-        name: `Проект ${sessionNumber}`,
-        createdAt: Date.now()
-    };
-    
-    sessions.value.push(newSession);
-    saveSessions();
+    const result = sessionStore.createSession();
     
     // Инициализируем пустое состояние для новой сессии
-    localStorage.setItem(`canvasState_${sessionId}`, JSON.stringify({
+    localStorage.setItem(`canvasState_${result.sessionId}`, JSON.stringify({
         nodes: [],
         connections: [],
         nextNodeId: 1,
         nextZIndex: 1
     }));
     
-    // Переключаемся на новую сессию
+    // Переключаемся на новую вкладку
+    activeTabValue.value = result.sessionId;
+};
+
+// Открыть существующую сессию (из карточки)
+const openSession = (sessionId) => {
+    sessionStore.openTab(sessionId);
     activeTabValue.value = sessionId;
 };
 
-// Открыть существующий шаблон
-const openTemplate = (id) => {
-    // Проверяем, не открыт ли уже
-    const existing = sessions.value.find(s => s.id === `template_${id}`);
-    if (existing) {
-        activeTabValue.value = existing.id;
-        return;
-    }
-    
-    const sessionId = `template_${id}`;
-    const newSession = {
-        id: sessionId,
-        name: `Шаблон ${id}`,
-        createdAt: Date.now(),
-        templateId: id
-    };
-    
-    sessions.value.push(newSession);
-    saveSessions();
-    
-    activeTabValue.value = sessionId;
-};
-
-// Закрыть сессию
+// Закрыть вкладку сессии
 const closeSession = (sessionId) => {
-    const index = sessions.value.findIndex(s => s.id === sessionId);
-    if (index === -1) return;
+    const index = openTabs.value.indexOf(sessionId);
     
     // Переключение при закрытии
     if (activeTabValue.value === sessionId) {
         if (index > 0) {
-            activeTabValue.value = sessions.value[index - 1].id;
+            activeTabValue.value = openTabs.value[index - 1];
+        } else if (openTabs.value.length > 1) {
+            activeTabValue.value = openTabs.value[1]; // первый после удалённого
         } else {
             activeTabValue.value = 'tab-home';
         }
     }
     
-    // Удаляем сессию и её данные
-    sessions.value.splice(index, 1);
-    localStorage.removeItem(`canvasState_${sessionId}`);
-    localStorage.removeItem(`canvasViewport_${sessionId}`);
-    saveSessions();
+    // Закрываем вкладку через стор
+    sessionStore.closeTab(sessionId);
 };
-
-// Загружаем сессии при монтировании
-loadSessions();
-
-// Демо-шаблоны для вкладки "Мои"
-const templatesMocks = [
-    { id: 1, name: 'Персонаж', date: 'demo' },
-    { id: 2, name: 'Селфи', date: 'demo' },
-    { id: 3, name: 'Новый год', date: 'demo' },
-];
 
 watch(() => activeTabValue.value, (newValue) => {
     console.log('Active tab:', newValue);
+    if (newValue && newValue !== 'tab-home' && newValue !== 'tab-public') {
+        sessionStore.setCurrentSession(newValue);
+    }
 });
 </script>

@@ -246,13 +246,13 @@
         <!-- Действия -->
         <div class="flex gap-1">
           <Button 
-            icon="pi pi-trash"
-            severity="danger"
+            icon="pi pi-save"
+            severity="success"
             text
             size="small"
             class="flex-1 !justify-center"
-            @click="confirmClear"
-            v-tooltip.top="'Очистить всё'"
+            @click="openSaveDialog"
+            v-tooltip.top="'Сохранить сессию'"
           />
           <Button 
             icon="pi pi-refresh"
@@ -276,18 +276,122 @@
       </div>
     </div>
   </Panel>
+
+  <!-- Диалог сохранения сессии -->
+  <Dialog 
+    v-model:visible="showSaveDialog" 
+    header="Сохранить сессию"
+    modal
+    :style="{ width: '400px' }"
+    :pt="{
+      root: { class: '!bg-zinc-900 !border-zinc-700' },
+      header: { class: '!bg-zinc-800 !text-white !border-zinc-700' },
+      content: { class: '!bg-zinc-900 !text-zinc-200' },
+      footer: { class: '!bg-zinc-800 !border-zinc-700' }
+    }"
+  >
+    <div class="flex flex-col gap-4 py-2">
+      <div class="flex flex-col gap-2">
+        <label class="text-sm text-zinc-400">Название сессии</label>
+        <InputText 
+          v-model="sessionNameInput" 
+          placeholder="Введите название..."
+          class="w-full !bg-zinc-800 !border-zinc-700 !text-white"
+          @keyup.enter="confirmSaveSession"
+          autofocus
+        />
+      </div>
+      <div class="text-xs text-zinc-500">
+        Если сессия с таким названием уже существует, она будет перезаписана.
+      </div>
+    </div>
+    
+    <template #footer>
+      <div class="flex gap-2 justify-end">
+        <Button 
+          label="Отмена"
+          severity="secondary"
+          text
+          size="small"
+          @click="closeSaveDialog"
+        />
+        <Button 
+          label="Сохранить"
+          severity="success"
+          size="small"
+          @click="confirmSaveSession"
+          :disabled="!sessionNameInput.trim()"
+        />
+      </div>
+    </template>
+  </Dialog>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { Panel, Button } from 'primevue'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
 import { useBoardStore } from '../store/boardStore'
+import { useSessionStore } from '../store/sessionStore'
 import { nodeCategories, getNodesByCategory, canConnect, getNodeConfig } from '../data/nodeConfig'
 import CustomToggleSwitch from '../components/CustomToggleSwitch.vue'
 
 const store = useBoardStore()
+const sessionStore = useSessionStore()
 const selectedCategory = ref(null)
 const searchQuery = ref('')
+
+// === Диалог сохранения сессии ===
+const showSaveDialog = ref(false)
+const sessionNameInput = ref('')
+const existingSessionId = ref(null)
+
+const openSaveDialog = () => {
+  // Генерируем дефолтное имя
+  const now = new Date()
+  const date = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
+  const time = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  sessionNameInput.value = `Сессия ${date} ${time}`
+  existingSessionId.value = null
+  showSaveDialog.value = true
+}
+
+const closeSaveDialog = () => {
+  showSaveDialog.value = false
+  sessionNameInput.value = ''
+  existingSessionId.value = null
+}
+
+const confirmSaveSession = () => {
+  const name = sessionNameInput.value.trim()
+  if (!name) {
+    alert('Введите название сессии')
+    return
+  }
+  
+  // Проверяем, существует ли сессия с таким именем
+  const existing = sessionStore.savedSessions.find(s => s.name === name)
+  
+  if (existing && !existingSessionId.value) {
+    // Сессия с таким именем уже существует, спрашиваем подтверждение
+    if (!confirm(`Сессия "${name}" уже существует. Перезаписать?`)) {
+      return
+    }
+    existingSessionId.value = existing.id
+  }
+  
+  // Сохраняем (создаём новую или обновляем существующую)
+  const session = sessionStore.saveCurrentSessionAs(name)
+  
+  showSaveDialog.value = false
+  sessionNameInput.value = ''
+  existingSessionId.value = null
+  
+  // Показываем уведомление
+  const actionText = session.isUpdate ? 'обновлена' : 'сохранена'
+  alert(`Сессия ${actionText}!\n\nНазвание: ${session.name}\nID: ${session.id}\nНод: ${session.meta.nodeCount}\nСвязей: ${session.meta.connectionCount}\n\nПроверьте консоль (F12) для просмотра JSON.`)
+}
 
 // Базовые ноды
 const baseNodes = computed(() => [
@@ -425,6 +529,7 @@ const resetToDefault = () => {
     store.loadDefault()
   }
 }
+
 </script>
 
 <style scoped>
