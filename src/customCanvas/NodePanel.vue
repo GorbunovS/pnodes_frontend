@@ -2,7 +2,7 @@
   <Panel 
     header="Библиотека нод"
     class="absolute  top-5 left-5 z-50 border border-zinc-800 text-white backdrop-blur-md shadow-2xl rounded-xl overflow-hidden"
-    style="width: 350px; max-height: 75vh;"
+    style="width: 350px; max-height: 80vh;"
   >
     <template #icons>
       <span class="text-[10px] text-zinc-500 px-2 py-0.5 rounded-full border border-zinc-700 mr-2">
@@ -10,7 +10,7 @@
       </span>
     </template>
 
-    <div class="flex flex-col h-full overflow-hidden" style="height: calc(75vh - 50px);" @wheel.stop>
+    <div class="flex flex-col h-full overflow-hidden" style="height: calc(80vh - 70px);" @wheel.stop>
       <!-- === ПОИСК === -->
       <div class="p-2 border-b border-zinc-800 shrink-0">
         <div class="relative">
@@ -231,7 +231,7 @@
       </div>
 
       <!-- === НИЖНЯЯ ПАНЕЛЬ === -->
-      <div class="p-2 border-t border-zinc-800 space-y-2 shrink-0 bg-zinc-900/50">
+      <div class="p-2 border-t rounded-xl border-zinc-800 space-y-2 shrink-0 bg-zinc-900/30">
         <!-- Тумблер подсказок -->
         <div class="flex items-center justify-between px-2 py-1.5 bg-zinc-800/30 rounded-lg">
           <span class="text-[11px] text-zinc-400">Подсказки</span>

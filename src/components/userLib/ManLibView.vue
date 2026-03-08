@@ -159,6 +159,7 @@ watch(() => activeTabValue.value, (newValue) => {
 /* Убираем стандартные padding от PrimeVue Tabs */
 :deep(.p-tabpanels) {
     padding: 0;
+    background-color: transparent;
 }
 
 :deep(.p-tabpanel) {

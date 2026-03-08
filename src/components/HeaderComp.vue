@@ -5,38 +5,38 @@
       <img :src="logo" alt="P nodes" class="h-6" />
       </div>
 
-      <nav class="flex items-center gap-12 text-lg">
-        <span 
+      <nav class="flex items-center gap-12 text-lg" >
+        <h5 
           class="cursor-pointer transition-colors"
           :class="currentPage === 'home' ? 'text-primary' : 'text-white hover:text-primary'"
           @click="setPage('home')"
         >
         Главная
-        </span>
-        <span
+        </h5>
+        <h5
           class="cursor-pointer transition-colors"
           :class="currentPage === 'community' ? 'text-primary' : 'text-white hover:text-primary'"
           @click="setPage('community')"
         >
           сообщество
-        </span>
+        </h5>
 
 
 
-        <span
+        <h5
           class="cursor-pointer transition-colors"
           :class="currentPage === 'prompting' ? 'text-primary' : 'text-white hover:text-primary'"
           @click="setPage('prompting')"
         >
           промтинг
-        </span>
-                <span
+        </h5>
+                <h5
           class="cursor-pointer transition-colors"
           :class="currentPage === 'profile' ? 'text-primary' : 'text-white hover:text-primary'"
           @click="setPage('profile')"
         >
           профиль
-        </span>
+        </h5>
       </nav>
 
        <div @click="setPage('profile')" v-if="userStore.user">
@@ -50,7 +50,7 @@
       
       <!-- ИНАЧЕ показываем кнопку "Войти" -->
       <div v-else>
-         <Button @click="setPage('profile')" class="text-sm font-bold text-primary hover:underline">
+         <Button @click="setPage('profile')" class="text-sm font-bold text-primary hover:underline font-display">
            Войти
          </Button>
       </div>

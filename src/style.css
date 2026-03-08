@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import 'primeicons/primeicons.css';
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&display=swap');
 
 @font-face {
   font-family: 'SoyuzGroteskBold';
@@ -12,14 +12,14 @@
 /* === CSS VARIABLES === */
 :root {
   --font-display: 'SoyuzGroteskBold', sans-serif;
-  --font-ui: 'Nunito', system-ui, sans-serif;
+  --font-ui: 'Onest', system-ui, sans-serif;
   
   /* Layout */
   --header-height: 64px;
   --tabs-height: 48px;
   
   line-height: 1.5;
-  font-weight: 400;
+  font-weight: 500;
   color-scheme: dark;
   color: #9EFFD5;
   background-color: #000000;
@@ -37,7 +37,7 @@
 /* === TYPOGRAPHY SYSTEM === */
 /* >17px — SoyuzGroteskBold (заголовки, крупный текст) */
 h1, h2, h3, h4, h5, h6,
-.text-display,
+.font-display, .text-display,
 .text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl, .text-7xl, .text-8xl, .text-9xl {
   font-family: var(--font-display);
 }
@@ -86,9 +86,9 @@ a:hover {
     width: 350px !important;
 }
 
-/* Шрифт Nunito для BoardViewer и всех его детей */
+/* Шрифт Onest для BoardViewer и всех его детей */
 .board-container {
-  font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Onest', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Иконки PrimeVue — используют свой шрифт */
