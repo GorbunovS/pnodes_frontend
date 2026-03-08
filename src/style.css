@@ -1,13 +1,21 @@
 @import "tailwindcss";
 @import 'primeicons/primeicons.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 /* @import 'line-awesome/dist/line-awesome/css/line-awesome.css'; */
 
 
+@font-face {
+  font-family: 'SoyuzGroteskBold';
+  src: url('./assets/fonts/Soyuz_Grotesk_Bold.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 :root {
-  --main-font: 'Racama-U', sans-serif;
+  --main-font: 'SoyuzGroteskBold', sans-serif;
+  --ui-font: 'Inter', system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  font: 'SoyuzGrotesk';
   color-scheme: dark;
   color: #9EFFD5;
   background-color: #000000;
@@ -23,17 +31,6 @@
   --color-primary: #9EC8FF;
 }
 
-
-@font-face {
-  font-family: "SoyuzGroteskBold";
-  src: url("../src/assets/fonts/Soyuz_Grotesk_Bold.otf") format("opentype");
-}
-@font-face {
-  font-family: 'Racama-U'; /* Название шрифта */
-  src: url('src/assets/fonts/Racama-U.otf') format('opentype'); /* Укажите путь к файлу */
-  font-weight: normal;
-  font-style: normal;
-}
 
 a {
   font-weight: 500;
@@ -67,6 +64,30 @@ a:hover {
     width: 350px !important;
 }
 
+/* Шрифт Inter для BoardViewer и всех его детей */
+.board-container {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Иконки PrimeVue — используют свой шрифт */
+.pi,
+[class^="pi-"],
+[class*=" pi-"],
+.primeicons {
+  font-family: 'primeicons' !important;
+}
+
+/* Наследование шрифта для всего остального */
+.board-container div,
+.board-container span,
+.board-container p,
+.board-container button,
+.board-container input,
+.board-container textarea,
+.board-container label {
+  font-family: inherit;
+}
+
 
 
 body {
@@ -80,6 +101,7 @@ body {
   background-color: #000000;
   display: flex;
   flex-direction: column;  
+  overflow-y: auto;
 }
 
 #app {
@@ -105,4 +127,42 @@ h1 {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* === ПРИНУДИТЕЛЬНЫЕ ТЁМНЫЕ СТИЛИ ДЛЯ PRIMEVUE ИНПУТОВ === */
+/* Эти стили перебивают любые светлые темы */
+
+.p-textarea,
+.p-inputtext,
+.p-select {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  color: #d4d4d8 !important;
+  border-color: rgba(63, 63, 70, 0.5) !important;
+}
+
+.p-textarea::placeholder,
+.p-inputtext::placeholder {
+  color: #52525b !important;
+}
+
+.p-textarea:focus,
+.p-inputtext:focus,
+.p-select:focus-within {
+  border-color: #71717a !important;
+  box-shadow: 0 0 0 1px rgba(113, 113, 122, 0.5) !important;
+}
+
+/* Стили для выпадающих списков */
+.p-select-dropdown {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  border-color: rgba(63, 63, 70, 0.5) !important;
+}
+
+.p-select-option {
+  background-color: transparent !important;
+  color: #d4d4d8 !important;
+}
+
+.p-select-option:hover {
+  background-color: rgba(63, 63, 70, 0.5) !important;
 }

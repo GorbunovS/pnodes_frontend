@@ -905,3 +905,4 @@ export const PROJECTS_MOCK = {
   "graphTemplates": []
 }
 };
+
