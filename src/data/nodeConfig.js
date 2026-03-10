@@ -37,6 +37,7 @@ const rankMap = {
   
   // Ранг 2: Сборка
   character: RANKS.ASSEMBLY,
+  userNode: RANKS.ASSEMBLY,
   
   // Ранг 3: Элементы
   lighting: RANKS.ELEMENT,
@@ -57,7 +58,13 @@ const rankMap = {
 }
 
 // Получить ранг типа
-export const getNodeRank = (type) => rankMap[type] || RANKS.ELEMENT
+export const getNodeRank = (type) => {
+  // Для виртуальных userNode используем ранг ASSEMBLY
+  if (type && type.startsWith('userNode_')) {
+    return RANKS.ASSEMBLY
+  }
+  return rankMap[type] || RANKS.ELEMENT
+}
 
 // === ТИПЫ НОД (основные категории) ===
 export const nodeTypes = {
@@ -75,11 +82,20 @@ export const nodeTypes = {
   HAIR: 'hair',
   COMPOSER: 'composer',
   RESULT: 'result',
-  GENERATION: 'generation'
+  GENERATION: 'generation',
+  USER_NODE: 'userNode'
 }
 
 // === КАТЕГОРИИ ДЛЯ UI ===
 export const nodeCategories = {
+  USER_NODES: {
+    id: 'userNodes',
+    name: 'Личные',
+    icon: 'pi pi-user-edit',
+    color: '#f472b6', // розовый (как на макете)
+    types: [nodeTypes.USER_NODE],
+    isUserCategory: true
+  },
   LIGHTING: {
     id: 'lighting',
     name: 'Свет',
@@ -140,6 +156,7 @@ export const connectionRules = {
   [nodeTypes.STYLE]: [nodeTypes.COMPOSER],
   [nodeTypes.MOOD]: [nodeTypes.COMPOSER],
   [nodeTypes.CHARACTER]: [nodeTypes.COMPOSER],
+  [nodeTypes.USER_NODE]: [nodeTypes.COMPOSER],
   [nodeTypes.SKIN]: [nodeTypes.CHARACTER],
   [nodeTypes.NOSE]: [nodeTypes.CHARACTER],
   [nodeTypes.EYES]: [nodeTypes.CHARACTER],
@@ -152,7 +169,14 @@ export const connectionRules = {
 // === ПРОВЕРКА СОЕДИНЕНИЯ ===
 export const canConnect = (fromType, toType, toConfig = null) => {
   // Приоритет 1: явный список разрешённых
-  if (toConfig?.acceptsFrom) return toConfig.acceptsFrom.includes(fromType)
+  if (toConfig?.acceptsFrom) {
+    // Проверяем точное совпадение
+    if (toConfig.acceptsFrom.includes(fromType)) return true
+    // Для userNode_xxx проверяем базовый тип userNode
+    if (fromType.startsWith('userNode_') && toConfig.acceptsFrom.includes('userNode')) return true
+    // Если acceptsFrom задан, но тип не найден - соединение запрещено
+    return false
+  }
   
   // Приоритет 2: acceptAnyInput разрешает любой тип
   if (toConfig?.acceptAnyInput) return true
@@ -166,7 +190,15 @@ export const canConnect = (fromType, toType, toConfig = null) => {
   
   // Fallback: старые правила (для совместимости)
   const allowed = connectionRules[fromType]
-  return allowed ? allowed.includes(toType) : false
+  if (allowed && allowed.includes(toType)) return true
+  
+  // Для виртуальных userNode проверяем базовый тип
+  if (fromType.startsWith('userNode_')) {
+    const baseAllowed = connectionRules['userNode']
+    if (baseAllowed && baseAllowed.includes(toType)) return true
+  }
+  
+  return false
 }
 
 // === КОНФИГИ НОД ===
@@ -447,7 +479,8 @@ export const nodeConfigs = {
       nodeTypes.MOOD,
       nodeTypes.CHARACTER,
       nodeTypes.PHOTO,
-      nodeTypes.VIDEO
+      nodeTypes.VIDEO,
+      nodeTypes.USER_NODE
     ],
     hasOutput: true,
     outputType: nodeTypes.COMPOSER,
@@ -480,6 +513,24 @@ export const nodeConfigs = {
     hasDescription: true,
     isGeneration: true, // Флаг для UI
     maxTags: 0
+  },
+  
+  // === ПОЛЬЗОВАТЕЛЬСКАЯ НОДА ===
+  [nodeTypes.USER_NODE]: {
+    name: 'Пользовательская',
+    type: nodeTypes.USER_NODE,
+    category: 'userNodes',
+    icon: 'pi pi-user-edit',
+    color: '#f472b6', // розовый
+    hasDescription: true,
+    hasInput: false,
+    hasOutput: true,
+    outputType: nodeTypes.USER_NODE,
+    maxTags: 5,
+    isUserNode: true, // Флаг для UI
+    // Пользовательские ноды создаются динамически, 
+    // поэтому здесь только базовая конфигурация
+    tags: []
   }
 }
 

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useHistoryStore } from './historyStore'
+import { useSessionStore } from './sessionStore'
 import { nodeConfigs, getNodeConfig, nodeTypes, canConnect } from '../data/nodeConfig.js'
 
       
@@ -13,6 +14,7 @@ const generateId = () => Date.now() + Math.random().toString(36).substr(2, 9)
 
 export const useBoardStore = defineStore('board', () => {
   const historyStore = useHistoryStore()
+  const sessionStore = useSessionStore()
 
   // === STATE ===
   const nodes = ref([])
@@ -116,10 +118,24 @@ export const useBoardStore = defineStore('board', () => {
     saveToSession()
   }
 
+  // Получить конфиг ноды (включая userNode из сессии)
+  const resolveNodeConfig = (nodeType) => {
+    // Сначала пробуем стандартный конфиг
+    const standardConfig = getNodeConfig(nodeType)
+    if (standardConfig) return standardConfig
+    
+    // Если не нашли и тип начинается с userNode_, ищем в сессии
+    if (nodeType.startsWith('userNode_')) {
+      return sessionStore.getUserNodeConfig(currentSessionId.value, nodeType)
+    }
+    
+    return null
+  }
+
   const restoreState = (state) => {
     if (!state) return
     nodes.value = state.nodes.map(n => {
-      const config = getNodeConfig(n.type)
+      const config = resolveNodeConfig(n.type)
       return { ...n, config }
     })
     connections.value = state.connections || []
@@ -130,8 +146,9 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   // === NODES ===
-  const createNode = (type, x, y, customData = {}, saveHistory = true) => {
-    const config = getNodeConfig(type)
+  const createNode = (type, x, y, customData = {}, saveHistory = true, customConfig = null) => {
+    // Если передан кастомный конфиг (для userNode), используем его
+    const config = customConfig || getNodeConfig(type)
     if (!config) return null
 
     const id = nextNodeId.value++
@@ -274,10 +291,14 @@ export const useBoardStore = defineStore('board', () => {
   const loadFromSession = () => {
     const key = getSessionKey()
     const saved = localStorage.getItem(key)
+    
+    // Восстанавливаем виртуальные конфиги пользовательских нод
+    sessionStore.restoreUserNodeConfigsFromTemplates(currentSessionId.value)
+    
     if (!saved) { loadDefault(); return }
     try {
       const state = JSON.parse(saved)
-      nodes.value = state.nodes.map(n => ({ ...n, config: getNodeConfig(n.type) }))
+      nodes.value = state.nodes.map(n => ({ ...n, config: resolveNodeConfig(n.type) }))
       connections.value = state.connections || []
       nextNodeId.value = state.nextNodeId || 1
       nextZIndex.value = state.nextZIndex || 1
@@ -299,6 +320,9 @@ export const useBoardStore = defineStore('board', () => {
     nextZIndex.value = 1
     clearSelection()
     
+    // Восстанавливаем виртуальные конфиги пользовательских нод
+    sessionStore.restoreUserNodeConfigsFromTemplates(sessionId)
+    
     if (!saved) {
       // Новая сессия - создаём пустое состояние
       historyStore.init({ nodes: [], connections: [], nextNodeId: 1, nextZIndex: 1 })
@@ -308,7 +332,7 @@ export const useBoardStore = defineStore('board', () => {
     
     try {
       const state = JSON.parse(saved)
-      nodes.value = state.nodes.map(n => ({ ...n, config: getNodeConfig(n.type) }))
+      nodes.value = state.nodes.map(n => ({ ...n, config: resolveNodeConfig(n.type) }))
       connections.value = state.connections || []
       nextNodeId.value = state.nextNodeId || 1
       nextZIndex.value = state.nextZIndex || 1

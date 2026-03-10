@@ -1,7 +1,7 @@
 <template>
   <div
     ref="boardContainer"
-    class="board-container w-full h-screen bg-zinc-950 overflow-hidden relative touch-none select-none font-[Inter]"
+    class="board-container w-full h-full bg-zinc-950 overflow-hidden relative touch-none select-none font-[Inter]"
     style="font-family: 'Inter', system-ui, sans-serif;"
     @wheel.prevent="onWheel"
     @mousedown.middle.prevent="startPan"
@@ -10,7 +10,7 @@
     @mouseleave="stopPan"
   >
     <!-- Панель нод -->
-    <NodePanel />
+    <NodePanel ref="nodePanelRef" />
   
 
     <div
@@ -27,15 +27,8 @@
         :scale="scale" 
         :session-id="sessionId"
         @center-canvas="onCenterCanvas"
+        @edit-user-node="onEditUserNode"
       />
-    </div>
-
-    <div class="absolute top-4 left-80 text-white font-mono z-20 pointer-events-none ml-4">
-      x: {{ Math.round(x) }} • y: {{ Math.round(y) }} • zoom: {{ scale.toFixed(2) }}
-    </div>
-
-    <div class="absolute bottom-4 left-4 text-white/70 text-sm z-20 pointer-events-none">
-      Средняя кнопка + движение → пан • Колёсико → зум • Drag/Click порты → соединить
     </div>
   </div>
 </template>
@@ -54,6 +47,14 @@ const props = defineProps({
 })
 
 const store = useBoardStore()
+const nodePanelRef = ref(null)
+
+// Обработка редактирования пользовательской ноды
+const onEditUserNode = (template) => {
+  if (nodePanelRef.value) {
+    nodePanelRef.value.openEditorForTemplate(template)
+  }
+}
 
 const x = ref(0)
 const y = ref(0)

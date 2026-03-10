@@ -26,9 +26,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col min-h-screen">
+  <div class="flex flex-col h-screen overflow-hidden">
     <!-- Фиксированный хедер -->
-    <header class="fixed top-0 left-0 right-0 z-50">
+    <header class="flex-shrink-0 z-50">
       <HeaderComp />
       <ProgressBar 
         v-if="proStore.loading || aistore.loading" 
@@ -37,14 +37,9 @@ onMounted(() => {
       />
     </header>
 
-    <!-- Основной контент -->
-    <main class="flex-1 pt-16">
+    <!-- Основной контент - занимает оставшееся пространство -->
+    <main class="flex-1 overflow-hidden relative">
       <RouterView />
     </main>
   </div>
 </template>
-
-
-<style scoped>
-
-</style>
