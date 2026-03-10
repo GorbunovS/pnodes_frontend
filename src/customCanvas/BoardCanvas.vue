@@ -1,6 +1,11 @@
 <template>
   <div 
-    class="relative" 
+    class="relative"
+    :class="{
+      'is-dragging-connection': isDraggingConnection,
+      'is-compatible': isCompatibleTarget === true,
+      'is-incompatible': isCompatibleTarget === false
+    }"
     style="width: 6000px; height: 4000px;"
     @pointerdown="onCanvasPointerDown"
   >
@@ -108,6 +113,54 @@
       </button>
     </div>
 
+    <!-- SVG слой для подсказок соединений (drag line + звёздочки) -->
+    <svg 
+      v-if="isDraggingConnection"
+      class="absolute inset-0 overflow-visible pointer-events-none z-40"
+      style="width: 100%; height: 100%;"
+    >
+      <!-- Пунктирная линия от output к цели -->
+      <path
+        :d="dragLinePath"
+        :stroke="dragLineColor"
+        stroke-width="2"
+        stroke-dasharray="8,4"
+        fill="none"
+        opacity="0.6"
+      />
+      
+      <!-- Звёздочки летящие по траектории -->
+      <g v-if="dragLinePath && isCompatibleTarget !== false">
+        <text
+          v-for="(star, i) in flyingStars"
+          :key="i"
+          :x="star.x"
+          :y="star.y"
+          :font-size="STAR_CONFIG.size"
+          fill="white"
+          opacity="0.9"
+          style="text-shadow: 0 0 8px currentColor;"
+        >
+          ✦
+        </text>
+      </g>
+    </svg>
+
+    <!-- Курсор запрещено (когда нельзя подключиться) -->
+    <div
+      v-if="isDraggingConnection && isCompatibleTarget === false"
+      class="absolute pointer-events-none z-50"
+      :style="{
+        left: (mousePos.x - 10) + 'px',
+        top: (mousePos.y - 10) + 'px'
+      }"
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20">
+        <circle cx="10" cy="10" r="8" stroke="#ef4444" stroke-width="2" fill="none"/>
+        <line x1="5" y1="5" x2="15" y2="15" stroke="#ef4444" stroke-width="2"/>
+      </svg>
+    </div>
+
     <!-- Ноды -->
     <div
       v-for="node in store.getSortedNodes"
@@ -169,6 +222,41 @@ import { useSessionStore } from '../store/sessionStore'
 import { canConnect } from '../data/nodeConfig'
 import NodesTemplate from './NodesTemplate.vue'
 
+// ═══════════════════════════════════════════════════════════════
+// 🎨 НАСТРОЙКИ АНИМАЦИИ ЗВЁЗДОЧЕК (Connection Preview)
+// Изменяйте эти параметры для настройки визуального эффекта
+// ═══════════════════════════════════════════════════════════════
+const STAR_CONFIG = {
+  // Количество звёздочек (3-8 рекомендуется)
+  count: 5,
+  
+  // Размер шрифта звёздочки в px
+  size: 12,
+  
+  // Скорость движения по пути (0.001 - 0.05)
+  // Меньше = медленнее
+  pathSpeed: 0.005,
+  
+  // Скорость вращения по спирали (оборотов в секунду)
+  spiralSpeed: 3,
+  
+  // Радиус спирали в px
+  spiralRadius: 8,
+  
+  // Амплитуда пульсации радиуса (0 = нет пульсации)
+  radiusPulse: 3,
+  
+  // Сжатие спирали вдоль пути (0.0 - 1.0)
+  // 1.0 = круг, 0.5 = эллипс
+  spiralFlatten: 0.6,
+  
+  // Амплитуда завитков вдоль пути
+  pathTwist: 5,
+  
+  // Фазовое смещение между звёздочками (0.0 - 1.0)
+  phaseOffset: 0.2
+}
+
 const props = defineProps({
   scale: { type: Number, default: 1 },
   panX: { type: Number, default: 0 },
@@ -183,6 +271,124 @@ const sessionStore = useSessionStore()
 
 // Флаг фокуса на инпуте любой ноды
 const isInputFocused = ref(false)
+
+// === DRAG СОЕДИНЕНИЯ (подсказки) ===
+const isDraggingConnection = ref(false)
+const dragSourceNode = ref(null)
+const dragSourcePos = ref({ x: 0, y: 0 })
+const mousePos = ref({ x: 0, y: 0 })
+const hoveredTargetNode = ref(null)
+const hoveredTargetPort = ref(null)
+const isCompatibleTarget = ref(null) // null = неизвестно, true/false
+
+// Инициализация звёздочек на основе конфига
+const initFlyingStars = () => {
+  return Array.from({ length: STAR_CONFIG.count }, (_, i) => ({
+    x: 0, 
+    y: 0, 
+    progress: i * STAR_CONFIG.phaseOffset
+  }))
+}
+const flyingStars = ref(initFlyingStars())
+let starsAnimationId = null
+
+// Цвет линии в зависимости от совместимости
+const dragLineColor = computed(() => {
+  if (isCompatibleTarget.value === false) return '#ef4444' // красный
+  if (isCompatibleTarget.value === true) return '#22c55e'  // зелёный
+  return dragSourceNode.value?.config?.color || '#22c55e'
+})
+
+// Путь пунктирной линии
+const dragLinePath = computed(() => {
+  if (!dragSourceNode.value) return ''
+  
+  const fromX = dragSourcePos.value.x
+  const fromY = dragSourcePos.value.y
+  const toX = mousePos.value.x
+  const toY = mousePos.value.y
+  
+  const dx = toX - fromX
+  const tension = Math.max(Math.abs(dx) * 0.5, 100)
+  
+  return `M ${fromX},${fromY} C ${fromX + tension},${fromY} ${toX - tension},${toY} ${toX},${toY}`
+})
+
+// Обновление позиций звёздочек (спиральное движение)
+const updateFlyingStars = () => {
+  if (!isDraggingConnection.value || !dragLinePath.value) {
+    flyingStars.value.forEach(star => { star.x = 0; star.y = 0 })
+    return
+  }
+  
+  const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  pathElement.setAttribute('d', dragLinePath.value)
+  const totalLength = pathElement.getTotalLength()
+  
+  // Глобальное время для синхронизации спирали
+  const time = Date.now() / 1000
+  
+  flyingStars.value.forEach((star, i) => {
+    // Обновляем прогресс по пути
+    star.progress += STAR_CONFIG.pathSpeed
+    if (star.progress > 1) star.progress = 0
+    
+    // Добавляем смещение для каждой звёздочки
+    const offsetProgress = (star.progress + i * STAR_CONFIG.phaseOffset) % 1
+    const currentLength = offsetProgress * totalLength
+    
+    // Точка на кривой
+    const point = pathElement.getPointAtLength(currentLength)
+    
+    // Точка немного впереди для вычисления направления
+    const delta = 2
+    const nextPoint = pathElement.getPointAtLength(Math.min(currentLength + delta, totalLength))
+    const prevPoint = pathElement.getPointAtLength(Math.max(currentLength - delta, 0))
+    
+    // Вектор направления кривой
+    const dx = nextPoint.x - prevPoint.x
+    const dy = nextPoint.y - prevPoint.y
+    
+    // Нормализованный вектор направления
+    const len = Math.sqrt(dx * dx + dy * dy) || 1
+    const tx = dx / len
+    const ty = dy / len
+    
+    // Нормаль (перпендикуляр) - поворот на 90°
+    const nx = -ty
+    const ny = tx
+    
+    // Спиральное движение с настраиваемыми параметрами
+    const spiralTime = time * STAR_CONFIG.spiralSpeed + i * 2.1
+    const spiralRadius = STAR_CONFIG.spiralRadius + Math.sin(time + i) * STAR_CONFIG.radiusPulse
+    const spiralOffset = Math.sin(spiralTime) * spiralRadius
+    const normalOffset = Math.cos(spiralTime) * spiralRadius * STAR_CONFIG.spiralFlatten
+    
+    // Дополнительное вращение вдоль пути (завиток)
+    const pathTwist = Math.sin(offsetProgress * Math.PI * 2 + time * 2) * STAR_CONFIG.pathTwist
+    
+    star.x = point.x + nx * (spiralOffset + pathTwist) + tx * normalOffset
+    star.y = point.y + ny * (spiralOffset + pathTwist) + ty * normalOffset
+  })
+  
+  if (isDraggingConnection.value) {
+    starsAnimationId = requestAnimationFrame(updateFlyingStars)
+  }
+}
+
+// Старт анимации звёздочек
+const startStarsAnimation = () => {
+  if (starsAnimationId) cancelAnimationFrame(starsAnimationId)
+  updateFlyingStars()
+}
+
+// Стоп анимации звёздочек
+const stopStarsAnimation = () => {
+  if (starsAnimationId) {
+    cancelAnimationFrame(starsAnimationId)
+    starsAnimationId = null
+  }
+}
 
 const onNodeFocusChange = (focused) => {
   isInputFocused.value = focused
@@ -530,6 +736,14 @@ const onCanvasPointerDown = (e) => {
     return
   }
   
+  // Если активен drag соединения и кликнули на пустое место - отменяем
+  if (isDraggingConnection.value && !e.target.closest('[data-port]')) {
+    stopDragConnection()
+    clickSource.value = null
+    store.clearActiveSource()
+    return
+  }
+  
   // Сбрасываем подсказки при клике на пустое место
   if (!e.target.closest('[data-id]')) {
     store.clearActiveSource()
@@ -681,6 +895,9 @@ const handlePortClick = (e, type, idx, portType, nodeId) => {
     if (node) {
       // Активируем подсказки
       store.setActiveSource(nodeId, node.type, node.config?.color || '#6ee7b7')
+      
+      // Запускаем drag режим с визуальными подсказками
+      startDragConnection(node, e)
     }
     
     clickSource.value = { nodeId, idx, portType }
@@ -689,6 +906,7 @@ const handlePortClick = (e, type, idx, portType, nodeId) => {
     const source = clickSource.value
     
     if (type !== 'input' || nodeId === source.nodeId) {
+      stopDragConnection()
       clickSource.value = null
       store.clearActiveSource()
       return
@@ -699,6 +917,7 @@ const handlePortClick = (e, type, idx, portType, nodeId) => {
     const toNode = store.getNodeById(nodeId)
     
     if (!fromNode || !toNode) {
+      stopDragConnection()
       clickSource.value = null
       store.clearActiveSource()
       return
@@ -709,19 +928,136 @@ const handlePortClick = (e, type, idx, portType, nodeId) => {
     
     if (!canConnect(fromType, toType, toNode.config)) {
       console.log('Cannot connect', fromType, 'to', toType)
+      stopDragConnection()
       clickSource.value = null
       store.clearActiveSource()
       return
     }
     
     store.createConnection(source.nodeId, source.idx, nodeId, idx)
+    stopDragConnection()
     clickSource.value = null
     store.clearActiveSource()
   }
 }
 
+// Старт drag соединения с подсказками
+const startDragConnection = (node, e) => {
+  isDraggingConnection.value = true
+  dragSourceNode.value = node
+  
+  // Определяем позицию output порта
+  const isComposer = node.config?.isComposer
+  const isResult = node.config?.isResult
+  const fromWidth = isComposer ? 340 : (isResult ? 380 : 320)
+  
+  dragSourcePos.value = {
+    x: node.x + fromWidth,
+    y: node.y
+  }
+  
+  // Обновляем позицию мыши
+  updateMousePos(e)
+  
+  // Добавляем глобальные обработчики
+  document.addEventListener('mousemove', onDragConnectionMove)
+  document.addEventListener('mouseup', onDragConnectionEnd)
+  document.addEventListener('keydown', onDragConnectionKeyDown)
+  
+  // Запускаем анимацию звёздочек
+  startStarsAnimation()
+}
+
+// Обновление позиции мыши
+const updateMousePos = (e) => {
+  const canvasContainer = document.querySelector('.board-container')
+  if (!canvasContainer) return
+  
+  const rect = canvasContainer.getBoundingClientRect()
+  mousePos.value = {
+    x: (e.clientX - rect.left - props.panX) / props.scale,
+    y: (e.clientY - rect.top - props.panY) / props.scale
+  }
+}
+
+// Движение мыши при drag
+const onDragConnectionMove = (e) => {
+  updateMousePos(e)
+  
+  // Проверяем, над каким портом находимся
+  checkHoveredPort()
+}
+
+// Проверка порта под курсором
+const checkHoveredPort = () => {
+  // Получаем позицию мыши на экране
+  const canvasContainer = document.querySelector('.board-container')
+  if (!canvasContainer) return
+  
+  const rect = canvasContainer.getBoundingClientRect()
+  const mouseX = mousePos.value.x * props.scale + props.panX + rect.left
+  const mouseY = mousePos.value.y * props.scale + props.panY + rect.top
+  
+  // Ищем элемент под курсором
+  const elements = document.elementsFromPoint(mouseX, mouseY)
+  
+  // Ищем input порт
+  for (const el of elements) {
+    if (el.dataset?.port === 'input') {
+      const nodeId = parseInt(el.closest('[data-id]')?.dataset?.id)
+      if (nodeId && nodeId !== dragSourceNode.value?.id) {
+        const node = store.getNodeById(nodeId)
+        if (node) {
+          hoveredTargetNode.value = node
+          hoveredTargetPort.value = el
+          
+          // Проверяем совместимость
+          const fromType = dragSourceNode.value?.config?.outputType || dragSourceNode.value?.type
+          isCompatibleTarget.value = canConnect(fromType, node.type, node.config)
+          return
+        }
+      }
+    }
+  }
+  
+  // Не нашли порт
+  hoveredTargetNode.value = null
+  hoveredTargetPort.value = null
+  isCompatibleTarget.value = null
+}
+
+// Конец drag (отпускание мыши)
+const onDragConnectionEnd = () => {
+  // Убираем глобальные обработчики, но не останавливаем drag сразу
+  // Он остановится при click на input порт или при отмене
+  document.removeEventListener('mousemove', onDragConnectionMove)
+  document.removeEventListener('mouseup', onDragConnectionEnd)
+}
+
+// Отмена по Escape
+const onDragConnectionKeyDown = (e) => {
+  if (e.key === 'Escape') {
+    stopDragConnection()
+    clickSource.value = null
+    store.clearActiveSource()
+  }
+}
+
+// Полная остановка drag
+const stopDragConnection = () => {
+  isDraggingConnection.value = false
+  dragSourceNode.value = null
+  hoveredTargetNode.value = null
+  hoveredTargetPort.value = null
+  isCompatibleTarget.value = null
+  stopStarsAnimation()
+  document.removeEventListener('mousemove', onDragConnectionMove)
+  document.removeEventListener('mouseup', onDragConnectionEnd)
+  document.removeEventListener('keydown', onDragConnectionKeyDown)
+}
+
 const handlePortMouseDown = () => {
-  // Для drag соединения
+  // Обработка в handlePortClick
 }
 
 const handleDeleteOutputConnections = (nodeId, outputIdx) => {
@@ -834,3 +1170,20 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyDown)
 })
 </script>
+
+<style scoped>
+/* Подсветка портов при drag соединения - ТОЛЬКО при наведении */
+
+/* Совместимый порт - зелёное свечение */
+.is-dragging-connection.is-compatible :deep([data-port="input"]:hover) {
+  filter: drop-shadow(0 0 4px #22c55e) drop-shadow(0 0 8px rgba(34, 197, 94, 0.5)) brightness(1.15) !important;
+  transform: rotate(45deg) scale(1.25) !important;
+}
+
+/* Несовместимый порт - красное свечение */
+.is-dragging-connection.is-incompatible :deep([data-port="input"]:hover) {
+  filter: drop-shadow(0 0 4px #ef4444) drop-shadow(0 0 8px rgba(239, 68, 68, 0.5)) brightness(1.1) !important;
+  transform: rotate(45deg) scale(1.1) !important;
+  cursor: not-allowed !important;
+}
+</style>
