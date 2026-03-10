@@ -319,6 +319,7 @@ const getConnectedNodes = (composerNodeId) => {
       name: fromNode.config?.name || fromNode.name,
       color: fromNode.config?.color || '#6ee7b7',
       type: fromNode.type,
+      jsonType: fromNode.config?.jsonType, // Тип для JSON (для userNode)
       prompt: [tagsPrompt, description].filter(Boolean).join(', '),
       tags: tagsPrompt,
       description: description
@@ -348,10 +349,13 @@ const getComposerDataForResult = (resultNodeId) => {
   // Подсчитываем количество каждого типа для создания уникальных ключей
   const typeCounts = {}
   const sources = enabledNodes.map((node) => {
+    // Определяем ключ для JSON: для userNode используем jsonType, для остальных - type
+    const typeKey = node.jsonType || node.type
+    
     // Увеличиваем счетчик для этого типа
-    typeCounts[node.type] = (typeCounts[node.type] || 0) + 1
+    typeCounts[typeKey] = (typeCounts[typeKey] || 0) + 1
     // Создаем ключ: тип или тип_номер (если дубликат)
-    const key = typeCounts[node.type] === 1 ? node.type : `${node.type}_${typeCounts[node.type] - 1}`
+    const key = typeCounts[typeKey] === 1 ? typeKey : `${typeKey}_${typeCounts[typeKey] - 1}`
     
     // Возвращаем объект с динамическим ключом
     return {
@@ -445,8 +449,11 @@ const getComposerDataForGeneration = (generationNodeId) => {
   // Строим структуру с динамическими ключами (поддержка дубликатов)
   const typeCounts = {}
   const sources = enabledNodes.map((node) => {
-    typeCounts[node.type] = (typeCounts[node.type] || 0) + 1
-    const key = typeCounts[node.type] === 1 ? node.type : `${node.type}_${typeCounts[node.type] - 1}`
+    // Определяем ключ для JSON: для userNode используем jsonType, для остальных - type
+    const typeKey = node.jsonType || node.type
+    
+    typeCounts[typeKey] = (typeCounts[typeKey] || 0) + 1
+    const key = typeCounts[typeKey] === 1 ? typeKey : `${typeKey}_${typeCounts[typeKey] - 1}`
     return {
       [key]: {
         value: node.tags,

@@ -23,6 +23,24 @@
         />
       </div>
 
+      <!-- Тип для JSON (для нейронки) -->
+      <div>
+        <label class="text-xs text-zinc-500 mb-1.5 block">
+          Тип для JSON 
+          <span class="text-zinc-600 text-[10px]">(латиницей, без пробелов)</span>
+        </label>
+        <InputText
+          v-model="jsonType"
+          placeholder="visual_effects"
+          class="w-full !bg-black !border-zinc-700 !text-white"
+          :pt="{ root: { class: '!rounded-xl' } }"
+          @input="jsonType = jsonType.toLowerCase().replace(/[^a-z0-9_]/g, '_')"
+        />
+        <div class="text-[10px] text-zinc-600 mt-1">
+          Будет использовано в промпте: { "{{ jsonType || 'custom' }}": { "value": "..." } }
+        </div>
+      </div>
+
       <!-- Макс. вариантов -->
       <div>
         <label class="text-xs text-zinc-500 mb-1.5 block">Макс. вариантов</label>
@@ -172,6 +190,7 @@ const isEdit = computed(() => !!props.editNode)
 
 // Данные формы
 const nodeName = ref('')
+const jsonType = ref('') // Тип для JSON (для нейронки)
 const maxVariants = ref(3)
 const nodeColor = ref('#f472b6')
 const nodeDescription = ref('')
@@ -199,6 +218,7 @@ const removeTag = (index) => {
 // Сброс формы
 const resetForm = () => {
   nodeName.value = ''
+  jsonType.value = ''
   maxVariants.value = 3
   nodeColor.value = '#f472b6'
   nodeDescription.value = ''
@@ -209,6 +229,7 @@ const resetForm = () => {
 const fillForm = (node) => {
   if (!node) return
   nodeName.value = node.name || ''
+  jsonType.value = node.jsonType || ''
   maxVariants.value = node.maxTags || 3
   nodeColor.value = node.color || '#f472b6'
   nodeDescription.value = node.description || ''
@@ -218,8 +239,9 @@ const fillForm = (node) => {
 // Сохранить
 const onSave = () => {
   const nodeData = {
-    id: props.editNode?.id || `userNode_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: props.editNode?.id || `${Date.now().toString(36)}${Math.random().toString(36).substr(2, 3)}`,
     name: nodeName.value.trim(),
+    jsonType: jsonType.value.trim() || 'custom', // Тип для JSON (для нейронки)
     type: 'userNode',
     category: 'userNodes',
     icon: 'pi pi-user-edit',

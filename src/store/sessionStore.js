@@ -111,7 +111,13 @@ export const useSessionStore = defineStore('session', () => {
 
   // === ВИРТУАЛЬНЫЕ КОНФИГИ ПОЛЬЗОВАТЕЛЬСКИХ НОД ===
   // Генерация уникального типа для пользовательской ноды
-  const generateUserNodeType = (templateId) => `userNode_${templateId}`
+  const generateUserNodeType = (templateId) => {
+    // Если ID уже содержит userNode_, не дублируем
+    if (templateId.startsWith('userNode_')) {
+      return templateId
+    }
+    return `userNode_${templateId}`
+  }
 
   // Сохранить все конфиги сессии в localStorage
   const saveUserNodeConfigsToStorage = (sessionId) => {
@@ -179,7 +185,8 @@ export const useSessionStore = defineStore('session', () => {
       maxTags: template.maxTags,
       tags: template.tags?.map(t => ({ ...t })) || [],
       isUserNode: true,
-      templateId: template.id
+      templateId: template.id,
+      jsonType: template.jsonType || 'custom' // Тип для JSON (для нейронки)
     }
     
     // Инициализируем хранилище для сессии если нужно

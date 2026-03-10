@@ -174,6 +174,8 @@ export const canConnect = (fromType, toType, toConfig = null) => {
     if (toConfig.acceptsFrom.includes(fromType)) return true
     // Для userNode_xxx проверяем базовый тип userNode
     if (fromType.startsWith('userNode_') && toConfig.acceptsFrom.includes('userNode')) return true
+    // Если acceptsFrom задан, но тип не найден - соединение запрещено
+    return false
   }
   
   // Приоритет 2: acceptAnyInput разрешает любой тип
