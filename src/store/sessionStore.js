@@ -4,6 +4,8 @@ import { getNodeConfig } from '../data/nodeConfig.js'
 
 const SESSIONS_LIST_KEY = 'pnodes_sessions_list'
 const SESSION_DATA_PREFIX = 'pnodes_session_data_'
+const USER_NODE_TEMPLATES_PREFIX = 'pnodes_user_nodes_'
+const USER_NODE_CONFIGS_PREFIX = 'pnodes_user_configs_'
 
 // Генерация ID для сессии
 const generateSessionId = () => `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -21,12 +23,216 @@ export const useSessionStore = defineStore('session', () => {
   const currentSessionId = ref(null)
   // Флаг несохранённых изменений для каждой сессии
   const unsavedChanges = ref(new Set())
+  // Шаблоны пользовательских нод (реактивный кэш)
+  const userNodeTemplatesCache = ref({}) // { sessionId: templates[] }
+  // Виртуальные конфиги пользовательских нод (как nodeConfigs, но для сессии)
+  const userNodeConfigs = ref({}) // { sessionId: { type: config } }
 
   // === GETTERS ===
   const hasUnsavedChanges = computed(() => (sessionId) => unsavedChanges.value.has(sessionId))
   const getSessionById = (id) => savedSessions.value.find(s => s.id === id)
   const currentSession = computed(() => getSessionById(currentSessionId.value))
   const getOpenTabsSessions = computed(() => openTabs.value.map(id => getSessionById(id)).filter(Boolean))
+
+  // === USER NODE TEMPLATES ===
+  // Получить шаблоны пользовательских нод для сессии
+  const getUserNodeTemplates = (sessionId) => {
+    if (!sessionId) return []
+    
+    // Возвращаем из кэша если есть
+    if (userNodeTemplatesCache.value[sessionId]) {
+      return userNodeTemplatesCache.value[sessionId]
+    }
+    
+    // Загружаем из localStorage
+    const key = `${USER_NODE_TEMPLATES_PREFIX}${sessionId}`
+    const saved = localStorage.getItem(key)
+    if (saved) {
+      try {
+        const templates = JSON.parse(saved)
+        userNodeTemplatesCache.value[sessionId] = templates
+        return templates
+      } catch (e) {
+        console.error('Failed to load user node templates:', e)
+        return []
+      }
+    }
+    return []
+  }
+
+  // Сохранить шаблон пользовательской ноды
+  const saveUserNodeTemplate = (sessionId, template) => {
+    if (!sessionId) return false
+    const key = `${USER_NODE_TEMPLATES_PREFIX}${sessionId}`
+    const templates = [...getUserNodeTemplates(sessionId)]
+    
+    // Deep copy template с копированием tags
+    const templateCopy = {
+      ...template,
+      tags: template.tags?.map(t => ({ ...t })) || []
+    }
+    
+    // Проверяем, существует ли уже шаблон с таким id
+    const existingIndex = templates.findIndex(t => t.id === template.id)
+    if (existingIndex >= 0) {
+      // Обновляем существующий
+      templates[existingIndex] = { ...templateCopy, updatedAt: Date.now() }
+    } else {
+      // Добавляем новый
+      templates.push({ ...templateCopy, createdAt: Date.now(), updatedAt: Date.now() })
+    }
+    
+    // Обновляем кэш и localStorage
+    userNodeTemplatesCache.value[sessionId] = templates
+    localStorage.setItem(key, JSON.stringify(templates))
+    return true
+  }
+
+  // Удалить шаблон пользовательской ноды
+  const deleteUserNodeTemplate = (sessionId, templateId) => {
+    if (!sessionId) return false
+    const key = `${USER_NODE_TEMPLATES_PREFIX}${sessionId}`
+    const templates = getUserNodeTemplates(sessionId).filter(t => t.id !== templateId)
+    
+    // Обновляем кэш и localStorage
+    userNodeTemplatesCache.value[sessionId] = templates
+    localStorage.setItem(key, JSON.stringify(templates))
+    return true
+  }
+
+  // Очистить все шаблоны для сессии
+  const clearUserNodeTemplates = (sessionId) => {
+    if (!sessionId) return false
+    const key = `${USER_NODE_TEMPLATES_PREFIX}${sessionId}`
+    localStorage.removeItem(key)
+    delete userNodeTemplatesCache.value[sessionId]
+    return true
+  }
+
+  // === ВИРТУАЛЬНЫЕ КОНФИГИ ПОЛЬЗОВАТЕЛЬСКИХ НОД ===
+  // Генерация уникального типа для пользовательской ноды
+  const generateUserNodeType = (templateId) => `userNode_${templateId}`
+
+  // Сохранить все конфиги сессии в localStorage
+  const saveUserNodeConfigsToStorage = (sessionId) => {
+    if (!sessionId) return
+    const key = `${USER_NODE_CONFIGS_PREFIX}${sessionId}`
+    const configs = userNodeConfigs.value[sessionId] || {}
+    localStorage.setItem(key, JSON.stringify(configs))
+  }
+
+  // Загрузить все конфиги сессии из localStorage
+  const loadUserNodeConfigsFromStorage = (sessionId) => {
+    if (!sessionId) return {}
+    const key = `${USER_NODE_CONFIGS_PREFIX}${sessionId}`
+    const saved = localStorage.getItem(key)
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        console.error('Failed to load user node configs:', e)
+      }
+    }
+    return {}
+  }
+
+  // Восстановить виртуальные конфиги из шаблонов (при загрузке сессии)
+  const restoreUserNodeConfigsFromTemplates = (sessionId) => {
+    if (!sessionId) return
+    
+    // Сначала пробуем загрузить из localStorage
+    const savedConfigs = loadUserNodeConfigsFromStorage(sessionId)
+    if (Object.keys(savedConfigs).length > 0) {
+      userNodeConfigs.value[sessionId] = savedConfigs
+      return
+    }
+    
+    // Если нет в localStorage, создаём из шаблонов
+    const templates = getUserNodeTemplates(sessionId)
+    if (templates.length > 0) {
+      userNodeConfigs.value[sessionId] = {}
+      templates.forEach(template => {
+        createUserNodeConfig(sessionId, template, false) // false = не сохранять в storage
+      })
+      // Сохраняем все разом
+      saveUserNodeConfigsToStorage(sessionId)
+    }
+  }
+
+  // Создать/обновить виртуальный конфиг из шаблона
+  const createUserNodeConfig = (sessionId, template, saveToStorage = true) => {
+    if (!sessionId) return null
+    
+    const type = generateUserNodeType(template.id)
+    
+    // Структура конфига как у обычной ноды
+    const config = {
+      name: template.name,
+      type: type,
+      category: 'userNodes',
+      icon: 'pi pi-user-edit',
+      color: template.color,
+      hasDescription: true,
+      hasInput: false,
+      hasOutput: true,
+      outputType: type,
+      maxTags: template.maxTags,
+      tags: template.tags?.map(t => ({ ...t })) || [],
+      isUserNode: true,
+      templateId: template.id
+    }
+    
+    // Инициализируем хранилище для сессии если нужно
+    if (!userNodeConfigs.value[sessionId]) {
+      userNodeConfigs.value[sessionId] = {}
+    }
+    
+    // Сохраняем конфиг
+    userNodeConfigs.value[sessionId][type] = config
+    
+    // Сохраняем в localStorage если нужно
+    if (saveToStorage) {
+      saveUserNodeConfigsToStorage(sessionId)
+    }
+    
+    return config
+  }
+
+  // Получить конфиг пользовательской ноды
+  const getUserNodeConfig = (sessionId, type) => {
+    if (!sessionId || !type) return null
+    // Если конфига нет в кэше, пробуем загрузить из storage
+    if (!userNodeConfigs.value[sessionId]?.[type]) {
+      const savedConfigs = loadUserNodeConfigsFromStorage(sessionId)
+      if (savedConfigs[type]) {
+        if (!userNodeConfigs.value[sessionId]) {
+          userNodeConfigs.value[sessionId] = {}
+        }
+        userNodeConfigs.value[sessionId][type] = savedConfigs[type]
+      }
+    }
+    return userNodeConfigs.value[sessionId]?.[type] || null
+  }
+
+  // Получить все конфиги пользовательских нод для сессии
+  const getAllUserNodeConfigs = (sessionId) => {
+    if (!sessionId) return []
+    // Убедимся что конфиги загружены
+    if (!userNodeConfigs.value[sessionId]) {
+      restoreUserNodeConfigsFromTemplates(sessionId)
+    }
+    return Object.values(userNodeConfigs.value[sessionId] || {})
+  }
+
+  // Удалить конфиг пользовательской ноды
+  const deleteUserNodeConfig = (sessionId, type) => {
+    if (!sessionId || !type) return false
+    if (userNodeConfigs.value[sessionId]) {
+      delete userNodeConfigs.value[sessionId][type]
+      saveUserNodeConfigsToStorage(sessionId)
+    }
+    return true
+  }
 
   // === LOAD/SAVE LIST ===
   const loadSessionsList = () => {
@@ -258,6 +464,7 @@ export const useSessionStore = defineStore('session', () => {
     // Удаляем данные
     localStorage.removeItem(`${SESSION_DATA_PREFIX}${sessionId}`)
     localStorage.removeItem(`canvasViewport_${sessionId}`)
+    localStorage.removeItem(`${USER_NODE_TEMPLATES_PREFIX}${sessionId}`)
     
     // Удаляем из списка сохранённых
     savedSessions.value = savedSessions.value.filter(s => s.id !== sessionId)
@@ -413,6 +620,21 @@ export const useSessionStore = defineStore('session', () => {
         session.modifiedAt = Date.now()
         saveSessionsList()
       }
-    }
+    },
+    // User node templates
+    getUserNodeTemplates,
+    saveUserNodeTemplate,
+    deleteUserNodeTemplate,
+    clearUserNodeTemplates,
+    // Reactive cache for templates
+    userNodeTemplatesCache,
+    // User node virtual configs
+    userNodeConfigs,
+    generateUserNodeType,
+    createUserNodeConfig,
+    getUserNodeConfig,
+    getAllUserNodeConfigs,
+    deleteUserNodeConfig,
+    restoreUserNodeConfigsFromTemplates
   }
 })

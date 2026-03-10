@@ -124,12 +124,16 @@
         :node-type="node.type"
         :title="node.config?.name || node.name"
         :node-color="node.config?.color || '#6ee7b7'"
-        :tags="node.config?.tags || []"
+        :tags="node.config?.tags || node.data?.tags || []"
         :is-composer="node.config?.isComposer ?? false"
         :is-result="node.config?.isResult ?? false"
         :is-character="node.config?.isCharacter ?? false"
         :is-generation="node.config?.isGeneration ?? false"
-        :max-tags="node.config?.maxTags || 5"
+        :is-user-node="node.config?.isUserNode ?? false"
+        :user-node-name="node.data?.userNodeName || node.config?.name"
+        :user-node-color="node.data?.userNodeColor || node.config?.color"
+        :user-node-max-tags="node.data?.userNodeMaxTags || node.config?.maxTags || 5"
+        :max-tags="node.config?.maxTags || node.data?.userNodeMaxTags || 5"
         :has-description="node.config?.hasDescription ?? true"
         :has-output="node.config?.hasOutput ?? true"
         :has-input="node.config?.hasInput ?? false"
@@ -144,11 +148,15 @@
         :connected-nodes="(node.config?.isComposer || node.type === 'character') ? getConnectedNodes(node.id) : []"
         :composer-data="node.config?.isResult ? getComposerDataForResult(node.id) : (node.config?.isGeneration ? getComposerDataForGeneration(node.id) : null)"
         :input-prompt="node.config?.isGeneration ? getPromptForGeneration(node.id) : ''"
+        :node-data="node.data"
+        :config="node.config"
         v-model="node.data"
         @port-click="handlePortClick"
         @port-mouse-down="handlePortMouseDown"
         @delete-output-connections="handleDeleteOutputConnections"
         @delete-input-connections="handleDeleteInputConnections"
+        @focus-change="onNodeFocusChange"
+        @edit-user-node="onEditUserNode"
       />
     </div>
   </div>
@@ -157,6 +165,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useBoardStore } from '../store/boardStore'
+import { useSessionStore } from '../store/sessionStore'
 import { canConnect } from '../data/nodeConfig'
 import NodesTemplate from './NodesTemplate.vue'
 
@@ -167,15 +176,33 @@ const props = defineProps({
   sessionId: { type: String, default: 'default' }
 })
 
-const emit = defineEmits(['centerCanvas'])
+const emit = defineEmits(['centerCanvas', 'editUserNode'])
 
 const store = useBoardStore()
+const sessionStore = useSessionStore()
 
 // Флаг фокуса на инпуте любой ноды
 const isInputFocused = ref(false)
 
 const onNodeFocusChange = (focused) => {
   isInputFocused.value = focused
+}
+
+// === USER NODE EDIT ===
+const onEditUserNode = (nodeId) => {
+  const node = store.getNodeById(nodeId)
+  if (!node || !node.config?.isUserNode) return
+  
+  // Получаем templateId из конфига ноды
+  const templateId = node.config?.templateId
+  if (!templateId) return
+  
+  // Ищем существующий шаблон
+  const existingTemplate = sessionStore.getUserNodeTemplates(store.currentSessionId).find(t => t.id === templateId)
+  if (!existingTemplate) return
+  
+  // Отправляем существующий шаблон для редактирования
+  emit('editUserNode', { ...existingTemplate })
 }
 
 // === УПРАВЛЕНИЕ СВЯЗЯМИ ===

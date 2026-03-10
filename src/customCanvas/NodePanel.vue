@@ -177,56 +177,125 @@
 
         <!-- Ноды выбранной категории -->
         <div v-if="selectedCategory" class="px-3 pb-3 space-y-1">
+          <!-- Заголовок с кнопками -->
           <div class="flex items-center justify-between px-1 py-1 mb-1">
             <span class="text-xs font-medium text-zinc-400">
-              {{ getSelectedCategoryName }}
+              {{ getSelectedCategoryName || 'Личные' }} 
             </span>
-            <Button 
-              icon="pi pi-times"
-              severity="danger"
-              text
-              size="small"
-              class="!p-1 !w-6 !h-6"
-              @click="selectedCategory = null"
-            />
+            <div class="flex items-center gap-1">
+              <!-- Кнопка добавления для категории Личные -->
+              <Button 
+                v-if="selectedCategory === 'userNodes'"
+                icon="pi pi-plus"
+                severity="secondary"
+                text
+                size="small"
+                class="!p-1 !w-6 !h-6"
+                @click="createUserNode"
+                v-tooltip.top="'Создать ноду'"
+              />
+              <Button 
+                icon="pi pi-times"
+                severity="danger"
+                text
+                size="small"
+                class="!p-1 !w-6 !h-6"
+                @click="selectedCategory = null"
+              />
+            </div>
           </div>
 
-          <div 
-            v-for="config in nodesInSelectedCategory" 
-            :key="config.type"
-            class="group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all border"
-            :class="[
-              isNodeHighlighted(config.type) 
-                ? 'bg-zinc-800 border-zinc-500 shadow-lg' 
-                : 'bg-zinc-900/30 border-transparent hover:bg-zinc-800/60'
-            ]"
-            :style="isNodeHighlighted(config.type) ? { 
-              borderColor: store.activeSource?.color || '#22c55e',
-              boxShadow: `0 0 10px ${(store.activeSource?.color || '#22c55e') + '40'}`
-            } : {}"
-            @click="!config.disabled && createNode(config.type)"
-          >
+          <!-- Список нод категории -->
+          <template v-if="selectedCategory === 'userNodes'">
+            <!-- Пустое состояние -->
+            <div v-if="userNodeVirtualConfigs.length === 0" class="text-center py-8">
+              <div class="text-sm text-zinc-500 mb-3">У вас пока нет персональных нод</div>
+              <Button 
+                label="Создать"
+                size="small"
+                class="!bg-zinc-800 !border-zinc-700"
+                @click="createUserNode"
+              />
+            </div>
+            <!-- Список виртуальных конфигов -->
             <div 
-              class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              :style="{ backgroundColor: config.color + '20', color: config.color }"
+              v-for="config in userNodeVirtualConfigs" 
+              :key="config.type"
+              class="group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all border"
+              :class="[
+                isNodeHighlighted(config.type) 
+                  ? 'bg-zinc-800 border-zinc-500 shadow-lg' 
+                  : 'bg-zinc-900/30 border-transparent hover:bg-zinc-800/60'
+              ]"
+              :style="isNodeHighlighted(config.type) ? { 
+                borderColor: store.activeSource?.color || '#22c55e',
+                boxShadow: `0 0 10px ${(store.activeSource?.color || '#22c55e') + '40'}`
+              } : {}"
+              @click="createNodeFromConfig(config)"
             >
-              <i :class="config.icon || 'pi pi-tag'"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium text-zinc-200 group-hover:text-white truncate">
-                {{ config.name }}
+              <div 
+                class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                :style="{ backgroundColor: config.color + '20', color: config.color }"
+              >
+                <i :class="config.icon || 'pi pi-user-edit'"></i>
               </div>
-              <div class="text-[10px] text-zinc-500 truncate" v-if="!config.disabled">
-                {{ getSubTypesShort(config) }}
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-zinc-200 group-hover:text-white truncate">
+                  {{ config.name }}
+                </div>
+                <div class="text-[10px] text-zinc-500">{{ config.tags?.length || 0 }} тегов</div>
               </div>
-              <div class="text-[10px] text-amber-500" v-else>Скоро</div>
+              <Button
+                icon="pi pi-pencil"
+                severity="secondary"
+                text
+                size="small"
+                class="!p-1 !w-6 !h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                @click="editUserNodeByConfig(config, $event)"
+              />
+              <i class="pi pi-plus text-zinc-600 group-hover:text-zinc-400 text-xs shrink-0"></i>
             </div>
-            <i 
-              v-if="!config.disabled" 
-              class="pi pi-plus text-zinc-600 group-hover:text-zinc-400 text-xs shrink-0"
-            ></i>
-            <i v-else class="pi pi-lock text-zinc-600 text-xs shrink-0"></i>
-          </div>
+          </template>
+
+          <!-- Обычные категории -->
+          <template v-else>
+            <div 
+              v-for="config in nodesInSelectedCategory" 
+              :key="config.type"
+              class="group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all border"
+              :class="[
+                isNodeHighlighted(config.type) 
+                  ? 'bg-zinc-800 border-zinc-500 shadow-lg' 
+                  : 'bg-zinc-900/30 border-transparent hover:bg-zinc-800/60'
+              ]"
+              :style="isNodeHighlighted(config.type) ? { 
+                borderColor: store.activeSource?.color || '#22c55e',
+                boxShadow: `0 0 10px ${(store.activeSource?.color || '#22c55e') + '40'}`
+              } : {}"
+              @click="!config.disabled && createNode(config.type)"
+            >
+              <div 
+                class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                :style="{ backgroundColor: config.color + '20', color: config.color }"
+              >
+                <i :class="config.icon || 'pi pi-tag'"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-zinc-200 group-hover:text-white truncate">
+                  {{ config.name }}
+                </div>
+                <div class="text-[10px] text-zinc-500 truncate" v-if="!config.disabled">
+                  {{ getSubTypesShort(config) }}
+                </div>
+                <div class="text-[10px] text-amber-500" v-else>Скоро</div>
+              </div>
+              <i 
+                v-if="!config.disabled" 
+                class="pi pi-plus text-zinc-600 group-hover:text-zinc-400 text-xs shrink-0"
+              ></i>
+              <i v-else class="pi pi-lock text-zinc-600 text-xs shrink-0"></i>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -267,18 +336,149 @@
       </div>
     </div>
   </Panel>
+
+  <!-- Редактор пользовательских нод -->
+  <UserNodeEditor
+    v-model="showUserNodeEditor"
+    :edit-node="editingUserNode"
+    @save="onSaveUserNodeTemplate"
+    @delete="onDeleteUserNodeTemplate"
+  />
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { Panel, Button } from 'primevue'
 import { useBoardStore } from '../store/boardStore'
-import { nodeCategories, getNodesByCategory, canConnect, getNodeConfig } from '../data/nodeConfig'
+import { useSessionStore } from '../store/sessionStore'
+import { nodeCategories, getNodesByCategory, canConnect, getNodeConfig, nodeTypes } from '../data/nodeConfig'
 import CustomToggleSwitch from '../components/CustomToggleSwitch.vue'
+import UserNodeEditor from './UserNodeEditor.vue'
 
 const store = useBoardStore()
+const sessionStore = useSessionStore()
 const selectedCategory = ref(null)
 const searchQuery = ref('')
+
+// === ПОЛЬЗОВАТЕЛЬСКИЕ НОДЫ ===
+const showUserNodeEditor = ref(false)
+const editingUserNode = ref(null)
+
+// Получаем шаблоны пользовательских нод для текущей сессии (реактивно)
+const userNodeTemplates = computed(() => {
+  // Доступ к кэшу для реактивности
+  const cache = sessionStore.userNodeTemplatesCache
+  const sessionId = store.currentSessionId
+  if (!sessionId) return []
+  
+  // Если в кэше есть данные - используем их
+  if (cache[sessionId]) {
+    return cache[sessionId]
+  }
+  
+  // Иначе загружаем из store
+  return sessionStore.getUserNodeTemplates(sessionId)
+})
+
+// Получаем виртуальные конфиги пользовательских нод (реактивно)
+const userNodeVirtualConfigs = computed(() => {
+  const configs = sessionStore.userNodeConfigs
+  const sessionId = store.currentSessionId
+  if (!sessionId) return []
+  
+  return Object.values(configs[sessionId] || {})
+})
+
+// Открыть редактор для создания новой ноды
+const createUserNode = () => {
+  editingUserNode.value = null
+  showUserNodeEditor.value = true
+}
+
+// Открыть редактор для редактирования
+const editUserNode = (node, event) => {
+  if (event) event.stopPropagation()
+  editingUserNode.value = node
+  showUserNodeEditor.value = true
+}
+
+// Метод для вызова извне (через ref)
+const openEditorForTemplate = (template) => {
+  editingUserNode.value = template
+  showUserNodeEditor.value = true
+}
+
+// Экспортируем метод для родительского компонента
+defineExpose({
+  openEditorForTemplate
+})
+
+// Сохранить шаблон пользовательской ноды
+const onSaveUserNodeTemplate = (nodeData) => {
+  // Сохраняем шаблон
+  sessionStore.saveUserNodeTemplate(store.currentSessionId, nodeData)
+  // Обновляем/создаём виртуальный конфиг
+  sessionStore.createUserNodeConfig(store.currentSessionId, nodeData)
+}
+
+// Удалить шаблон
+const onDeleteUserNodeTemplate = (templateId) => {
+  sessionStore.deleteUserNodeTemplate(store.currentSessionId, templateId)
+  // Удаляем виртуальный конфиг
+  const type = sessionStore.generateUserNodeType(templateId)
+  sessionStore.deleteUserNodeConfig(store.currentSessionId, type)
+}
+
+// Создать ноду на канвасе из шаблона (из панели)
+const createNodeFromTemplate = (template) => {
+  const canvasCenterX = 3000
+  const canvasCenterY = 2000
+  const randomOffset = () => (Math.random() - 0.5) * 100
+  
+  // Создаём виртуальный конфиг из шаблона
+  const userConfig = sessionStore.createUserNodeConfig(store.currentSessionId, template)
+  if (!userConfig) return null
+  
+  // Создаём ноду с виртуальным конфигом
+  const customData = {
+    tags: [], // Выбранные теги - пустые при создании
+    description: template.description || ''
+  }
+  
+  // Создаём ноду с кастомным конфигом
+  store.createNode(userConfig.type, canvasCenterX + randomOffset(), canvasCenterY + randomOffset(), customData, true, userConfig)
+}
+
+// Создать ноду из виртуального конфига (из списка категории)
+const createNodeFromConfig = (config) => {
+  const canvasCenterX = 3000
+  const canvasCenterY = 2000
+  const randomOffset = () => (Math.random() - 0.5) * 100
+  
+  // Находим шаблон для этого конфига
+  const template = userNodeTemplates.value.find(t => t.id === config.templateId)
+  if (!template) return
+  
+  // Создаём ноду с существующим конфигом
+  const customData = {
+    tags: [], // Выбранные теги - пустые при создании
+    description: template.description || ''
+  }
+  
+  store.createNode(config.type, canvasCenterX + randomOffset(), canvasCenterY + randomOffset(), customData, true, config)
+}
+
+// Редактировать ноду по виртуальному конфигу
+const editUserNodeByConfig = (config, event) => {
+  if (event) event.stopPropagation()
+  
+  // Находим шаблон для этого конфига
+  const template = userNodeTemplates.value.find(t => t.id === config.templateId)
+  if (!template) return
+  
+  editingUserNode.value = { ...template }
+  showUserNodeEditor.value = true
+}
 
 // Базовые ноды
 const baseNodes = computed(() => [

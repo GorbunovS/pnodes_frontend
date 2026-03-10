@@ -1,5 +1,5 @@
 <template>
-  <!-- ОБЫЧНАЯ НОДА С ТЕГАМИ -->
+  <!-- ОБЫЧНАЯ НОДА С ТЕГАМИ (включая пользовательскую) -->
   <div 
     v-if="!isComposer && !isResult && !isCharacter && !isGeneration"
     ref="nodeRef"
@@ -11,18 +11,27 @@
     :style="{ 
       zIndex: zIndex || 1,
       backgroundColor: isSelected ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.3)',
-      border: `2px solid ${isSelected ? nodeColor : nodeColor + '99'}`,
+      border: `2px solid ${isSelected ? displayNodeColor : displayNodeColor + '99'}`,
       borderRadius: '1rem',
-      boxShadow: isSource ? `${nodeColor} 0 0 20px` : 'none'
+      boxShadow: isSource ? `${displayNodeColor} 0 0 20px` : 'none'
     }"
     :data-id="nodeId"
   >
-    <!-- Название ноды - сверху справа -->
-    <div 
-      class="absolute -top-3 right-4 px-2 py-0.5 text-xs font-medium rounded-full z-10"
-      :style="{ backgroundColor: nodeColor, color: '#000' }"
-    >
-      {{ title }}
+    <!-- Название ноды - сверху справа (с иконкой редактирования для userNode) -->
+    <div class="absolute -top-3 right-4 flex items-center gap-1 z-10">
+      <div 
+        class="px-2 py-0.5 text-xs font-medium rounded-full"
+        :style="{ backgroundColor: displayNodeColor, color: '#000' }"
+      >
+        {{ displayTitle }}
+      </div>
+      <button
+        v-if="isUserNode"
+        class="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+        @click.stop="$emit('editUserNode', nodeId)"
+      >
+        <i class="pi pi-pencil text-[10px]"></i>
+      </button>
     </div>
     
     <!-- Выбранные теги -->
@@ -62,7 +71,7 @@
     <!-- Кнопка + ещё -->
     <div class="px-4 py-2">
       <Button 
-        :label="remainingSlots > 0 ? `+ ещё ${remainingCount} (${localTags.length}/${maxTags})` : `Лимит: ${maxTags}`"
+        :label="remainingSlots > 0 ? `+ ещё ${remainingCount} (${localTags.length}/${displayMaxTags})` : `Лимит: ${displayMaxTags}`"
         text
         size="small"
         class="w-full !text-zinc-500 !justify-center hover:!text-zinc-300"
@@ -81,7 +90,7 @@
         :pt="{
           root: { 
             class: 'w-full bg-black/80 rounded-xl p-3 text-sm text-zinc-300 placeholder-zinc-600 resize-none border-0 focus:ring-1 focus:ring-zinc-500',
-            style: { border: `1px solid ${nodeColor}40` }
+            style: { border: `1px solid ${displayNodeColor}40` }
           }
         }"
         @focus="onInputFocus"
@@ -95,10 +104,10 @@
       class="absolute -right-3 -top-3 w-6 h-6 cursor-crosshair flex items-center justify-center transition-all duration-200 ease-out hover:scale-125"
       :class="{ 'hover:shadow-lg': !isSource }"
       :style="{ 
-        backgroundColor: hasOutputConnection ? nodeColor : '#18181b',
-        border: `2px solid ${nodeColor}`,
+        backgroundColor: hasOutputConnection ? displayNodeColor : '#18181b',
+        border: `2px solid ${displayNodeColor}`,
         opacity: '1',
-        boxShadow: isSource ? `0 0 10px ${nodeColor}` : 'none'
+        boxShadow: isSource ? `0 0 10px ${displayNodeColor}` : 'none'
       }"
       :data-port="'output'"
       data-idx="0"
@@ -137,7 +146,7 @@
     <!-- Модал всех тегов -->
     <Dialog 
       v-model:visible="showTagModal" 
-      :header="title"
+      :header="displayTitle"
       modal
       :style="{ width: '360px' }"
       :pt="{
@@ -173,7 +182,7 @@
       </div>
 
       <div v-if="remainingSlots <= 0" class="text-zinc-500 text-center py-4">
-        Достигнут лимит тегов ({{ maxTags }})
+        Достигнут лимит тегов ({{ displayMaxTags }})
       </div>
       <div v-else class="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto">
         <div 
@@ -191,7 +200,7 @@
         <Button 
           label="Готово" 
           @click="showTagModal = false; searchQuery = ''"
-          :style="{ backgroundColor: nodeColor, borderColor: nodeColor, color: '#000' }"
+          :style="{ backgroundColor: displayNodeColor, borderColor: displayNodeColor, color: '#000' }"
         />
       </template>
     </Dialog>
@@ -974,10 +983,21 @@ const props = defineProps({
   isResult: { type: Boolean, default: false },
   isCharacter: { type: Boolean, default: false },
   isGeneration: { type: Boolean, default: false },
+  isUserNode: { type: Boolean, default: false },
+  
+  // Для пользовательской ноды
+  userNodeName: { type: String, default: '' },
+  userNodeColor: { type: String, default: '#f472b6' },
+  userNodeMaxTags: { type: Number, default: 5 },
   
   // Для обычной ноды
   tags: { type: Array, default: () => [] },
   maxTags: { type: Number, default: 5 },
+  
+  // Для отображения имени пользовательской ноды
+  nodeData: { type: Object, default: null },
+  // Полный конфиг ноды (для userNode)
+  config: { type: Object, default: null },
   hasDescription: { type: Boolean, default: true },
   
   // Для композитора
@@ -1007,7 +1027,8 @@ const emit = defineEmits([
   'portMouseDown',
   'deleteInputConnections',
   'deleteOutputConnections',
-  'focusChange'
+  'focusChange',
+  'editUserNode'
 ])
 
 // === HINTS SYSTEM ===
@@ -1332,6 +1353,28 @@ watch(isInputCompatible, (compatible) => {
   }
 }, { immediate: true })
 
+// === ОТОБРАЖЕНИЕ НОДЫ (для поддержки userNode) ===
+const displayTitle = computed(() => {
+  if (props.isUserNode) {
+    return props.config?.name || 'Пользовательская'
+  }
+  return props.title
+})
+
+const displayNodeColor = computed(() => {
+  if (props.isUserNode) {
+    return props.config?.color || '#f472b6'
+  }
+  return props.nodeColor
+})
+
+const displayMaxTags = computed(() => {
+  if (props.isUserNode) {
+    return props.config?.maxTags || 5
+  }
+  return props.maxTags
+})
+
 // === ОБЫЧНАЯ НОДА ===
 const localTags = ref(props.modelValue.tags || [])
 const showTagModal = ref(false)
@@ -1446,6 +1489,9 @@ watch(() => props.modelValue, (newVal) => {
     characterHeight.value = newVal.height || 175
     characterWeight.value = newVal.weight || 70
     localEnabledParts.value = newVal.enabledParts || {}
+  } else if (props.isUserNode) {
+    localTags.value = newVal.tags || []
+    localDescription.value = newVal.description || ''
   } else if (!props.isComposer) {
     localTags.value = newVal.tags || []
     localDescription.value = newVal.description || ''
@@ -1477,20 +1523,30 @@ const selectedTags = computed(() => localTags.value)
 
 const availableTags = computed(() => {
   const selectedIds = new Set(localTags.value.map(t => t.id))
-  return props.tags.filter(t => !selectedIds.has(t.id))
+  // Для userNode берем доступные теги из конфига ноды (или tags для обычных)
+  const sourceTags = props.isUserNode 
+    ? (props.config?.tags || []) 
+    : props.tags
+  return sourceTags.filter(t => !selectedIds.has(t.id))
 })
 
 const visibleAvailableTags = computed(() => availableTags.value.slice(0, 4))
 
 const remainingCount = computed(() => availableTags.value.length)
-const remainingSlots = computed(() => props.maxTags - localTags.value.length)
+const remainingSlots = computed(() => {
+  return displayMaxTags.value - localTags.value.length
+})
 
 const selectedInModal = computed(() => localTags.value)
 
 const filteredAvailableTags = computed(() => {
   const selectedIds = new Set(localTags.value.map(t => t.id))
   const query = searchQuery.value.toLowerCase()
-  return props.tags.filter(t => {
+  // Для userNode берем доступные теги из конфига ноды (или tags для обычных)
+  const sourceTags = props.isUserNode 
+    ? (props.config?.tags || []) 
+    : props.tags
+  return sourceTags.filter(t => {
     const matchesSearch = t.name.toLowerCase().includes(query)
     const notSelected = !selectedIds.has(t.id)
     return matchesSearch && notSelected
